@@ -965,12 +965,32 @@ el('tbody').addEventListener('click', e => {
 
 loadData(true);
 
+const realtimeChannel = supabaseClient
+  .channel('leads-live')
+  .on(
+    'postgres_changes',
+    { event: '*', schema: 'public', table: 'leads' },
+    () => {
+      loadData(true);
+    }
+  )
+  .subscribe(status => {
+    if (status === 'SUBSCRIBED') {
+      el('syncStatus').textContent = 'Supabase conectado ao vivo';
+      el('syncInfo').textContent = `${leadsData.length} leads • Realtime ativo + atualização a cada 10s`;
+    }
+
+    if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+      el('syncInfo').textContent = `${leadsData.length} leads • Realtime indisponível, usando atualização a cada 10s`;
+    }
+  });
+
 setInterval(() => {
   loadData(true);
 }, 10000);
-.from('leads')
-.select('*')
-.order('id', { ascending: false });
+</script>
+</body>
+</html>
 </script>
 </body>
 </html>
