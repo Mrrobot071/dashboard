@@ -968,6 +968,9 @@ loadData(true);
 setInterval(() => {
   loadData(true);
 }, 10000);
+.from('leads')
+.select('*')
+.order('id', { ascending: false });
 </script>
 </body>
 </html>
