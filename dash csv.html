@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard de Leads | Construtec Engenharia</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --panel-soft: #f8fafc;
+      --text: #172033;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --brand: #0f3b5f;
+      --brand-2: #176b87;
+      --accent: #16a34a;
+      --warning: #f59e0b;
+      --danger: #dc2626;
+      --info: #0284c7;
+      --purple: #7c3aed;
+      --shadow: 0 14px 35px rgba(15, 59, 95, .10);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(23, 107, 135, .12), transparent 34rem),
+        linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .page {
+      width: min(1420px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 42px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .brand-block {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-mark {
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      letter-spacing: .5px;
+      box-shadow: var(--shadow);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.6rem, 2.6vw, 2.65rem);
+      letter-spacing: -.04em;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin-top: 4px;
+      font-size: .98rem;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    button, .file-btn, select, input {
+      font: inherit;
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 11px 15px;
+      cursor: pointer;
+      transition: .18s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-weight: 700;
+      min-height: 42px;
+    }
+
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 10px 18px rgba(15, 59, 95, .08); }
+    .btn.primary { background: var(--brand); color: #fff; border-color: var(--brand); }
+    .btn.ghost { background: transparent; }
+    .btn.danger { color: var(--danger); }
+
+    .upload-card {
+      background: linear-gradient(135deg, var(--brand), #0f526d);
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 22px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 1.4fr .9fr;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 18px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .upload-card::after {
+      content: "";
+      position: absolute;
+      inset: auto -90px -120px auto;
+      width: 260px;
+      height: 260px;
+      background: rgba(255,255,255,.10);
+      border-radius: 50%;
+    }
+
+    .upload-card h2 { margin: 0 0 8px; font-size: 1.25rem; }
+    .upload-card p { margin: 0; color: rgba(255,255,255,.78); line-height: 1.45; }
+
+    .file-zone {
+      justify-self: end;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: min(100%, 370px);
+    }
+
+    .file-input-wrapper { position: relative; }
+    .file-input-wrapper input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .file-btn {
+      width: 100%;
+      background: #fff;
+      color: var(--brand);
+      border: 0;
+      border-radius: 14px;
+      padding: 13px 16px;
+      font-weight: 800;
+      display: block;
+      text-align: center;
+      cursor: pointer;
+    }
+    .file-name { color: rgba(255,255,255,.88); font-size: .9rem; min-height: 18px; }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1.2fr repeat(3, minmax(160px, .45fr));
+      gap: 12px;
+      margin: 18px 0;
+    }
+
+    .control {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 11px 13px;
+      min-height: 44px;
+      width: 100%;
+      color: var(--text);
+      outline: none;
+    }
+
+    .control:focus { border-color: rgba(23,107,135,.65); box-shadow: 0 0 0 4px rgba(23,107,135,.09); }
+
+    .alert {
+      display: none;
+      align-items: flex-start;
+      gap: 12px;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      color: #9a3412;
+      border-radius: 15px;
+      padding: 14px 16px;
+      margin-bottom: 18px;
+    }
+
+    .alert.show { display: flex; }
+    .alert strong { color: #7c2d12; }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .kpi {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: 0 10px 24px rgba(15, 59, 95, .06);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .kpi::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 4px;
+      background: var(--brand-2);
+    }
+
+    .kpi.green::before { background: var(--accent); }
+    .kpi.orange::before { background: var(--warning); }
+    .kpi.purple::before { background: var(--purple); }
+    .kpi.red::before { background: var(--danger); }
+
+    .kpi-label { color: var(--muted); font-weight: 750; font-size: .86rem; text-transform: uppercase; letter-spacing: .05em; }
+    .kpi-value { font-size: clamp(1.75rem, 2.7vw, 2.55rem); font-weight: 850; margin-top: 10px; letter-spacing: -.04em; }
+    .kpi-help { color: var(--muted); margin-top: 8px; font-size: .92rem; }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(340px, .8fr);
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: 0 10px 24px rgba(15, 59, 95, .06);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .card h3 { margin: 0; font-size: 1.05rem; }
+    .mini { color: var(--muted); font-size: .88rem; }
+
+    .chart { width: 100%; min-height: 330px; }
+    .chart.small { min-height: 250px; }
+
+    .pipeline {
+      display: grid;
+      gap: 10px;
+    }
+
+    .pipe-row {
+      display: grid;
+      grid-template-columns: 145px 1fr auto;
+      gap: 12px;
+      align-items: center;
+      font-size: .95rem;
+    }
+
+    .bar {
+      height: 11px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      overflow: hidden;
+    }
+
+    .bar span { display: block; height: 100%; border-radius: inherit; background: var(--brand-2); width: 0%; }
+    .pipe-row:nth-child(2) .bar span { background: var(--info); }
+    .pipe-row:nth-child(3) .bar span { background: var(--purple); }
+    .pipe-row:nth-child(4) .bar span { background: var(--warning); }
+    .pipe-row:nth-child(5) .bar span { background: var(--accent); }
+    .pipe-row:nth-child(6) .bar span { background: var(--danger); }
+
+    .table-card { padding: 0; overflow: hidden; }
+    .table-top { padding: 18px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .table-wrap { overflow: auto; max-height: 520px; }
+
+    table { width: 100%; border-collapse: collapse; min-width: 920px; }
+    th, td { padding: 13px 16px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+    th { position: sticky; top: 0; background: #f8fafc; z-index: 2; color: #334155; font-size: .82rem; text-transform: uppercase; letter-spacing: .04em; }
+    tbody tr:hover { background: #f8fafc; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: .78rem;
+      font-weight: 800;
+      border: 1px solid transparent;
+    }
+
+    .captado { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+    .visualizado { background: #e0f2fe; color: #075985; border-color: #bae6fd; }
+    .tratado { background: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
+    .retorno { background: #ede9fe; color: #5b21b6; border-color: #ddd6fe; }
+    .fechado-venda { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+    .fechado-perda { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+
+
+    .table-input {
+      width: 100%;
+      min-width: 120px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 10px;
+      background: #fff;
+      color: var(--text);
+      font: inherit;
+    }
+
+    .table-input:focus {
+      outline: none;
+      border-color: rgba(23,107,135,.65);
+      box-shadow: 0 0 0 3px rgba(23,107,135,.09);
+    }
+
+    .apply-note {
+      display: none;
+      color: var(--warning);
+      font-weight: 750;
+      font-size: .88rem;
+    }
+
+    .apply-note.show { display: inline; }
+
+    .empty {
+      padding: 28px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .footer-note {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: .88rem;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 1100px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .content-grid { grid-template-columns: 1fr; }
+      .toolbar { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 760px) {
+      .topbar, .upload-card, .table-top { grid-template-columns: 1fr; flex-direction: column; align-items: stretch; }
+      .top-actions, .file-zone { justify-content: stretch; justify-self: stretch; }
+      .toolbar, .kpi-grid { grid-template-columns: 1fr; }
+      .pipe-row { grid-template-columns: 118px 1fr auto; }
+      .page { width: min(100% - 20px, 1420px); padding-top: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="topbar">
+      <div class="brand-block">
+        <div class="logo-mark">CT</div>
+        <div>
+          <h1>Dashboard de Leads</h1>
+          <div class="subtitle">Construtec Engenharia • visão comercial, pipeline e conversão</div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="btn" id="btnDemo">Carregar exemplo</button>
+        <button class="btn" id="btnExport">Exportar CSV</button>
+        <button class="btn danger" id="btnClear">Limpar dados</button>
+      </div>
+    </section>
+
+    <section class="upload-card">
+      <div>
+        <h2>Importação rápida de leads</h2>
+        <p>Use um CSV com as colunas: <strong>ID, Nome, Fonte, Status, Valor, Data</strong>. O painel aceita vírgula ou ponto e vírgula, valores em formato brasileiro e datas dd/mm/aaaa.</p>
+      </div>
+      <div class="file-zone">
+        <div class="file-input-wrapper">
+          <label class="file-btn" for="csvFileInput">Selecionar arquivo CSV</label>
+          <input type="file" id="csvFileInput" accept=".csv,text/csv" />
+        </div>
+        <div class="file-name" id="fileName">Nenhum arquivo selecionado</div>
+      </div>
+    </section>
+
+    <section class="toolbar">
+      <input class="control" id="searchInput" placeholder="Buscar por nome, fonte, status ou ID..." />
+      <select class="control" id="sourceFilter"><option value="">Todas as fontes</option></select>
+      <select class="control" id="statusFilter"><option value="">Todos os status</option></select>
+      <select class="control" id="periodFilter">
+        <option value="">Todo período</option>
+        <option value="7">Últimos 7 dias</option>
+        <option value="30">Últimos 30 dias</option>
+        <option value="90">Últimos 90 dias</option>
+      </select>
+    </section>
+
+    <section class="alert" id="alertBox">
+      <div>⚠️</div>
+      <div id="alertText"></div>
+    </section>
+
+    <section class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">Total de leads</div><div class="kpi-value" id="kpiTotal">0</div><div class="kpi-help" id="kpiTotalHelp">Base carregada</div></div>
+      <div class="kpi green"><div class="kpi-label">Conversão em venda</div><div class="kpi-value" id="kpiConversion">0%</div><div class="kpi-help" id="kpiConversionHelp">Fechado-venda / total</div></div>
+      <div class="kpi purple"><div class="kpi-label">Valor potencial</div><div class="kpi-value" id="kpiPotential">R$ 0</div><div class="kpi-help" id="kpiPotentialHelp">Soma dos valores filtrados</div></div>
+      <div class="kpi orange"><div class="kpi-label">Pendentes</div><div class="kpi-value" id="kpiPending">0</div><div class="kpi-help" id="kpiPendingHelp">Captado, visualizado ou retorno</div></div>
+    </section>
+
+    <section class="content-grid">
+      <article class="card">
+        <div class="card-header"><h3>Evolução mensal</h3><span class="mini">Quantidade de leads por mês</span></div>
+        <div id="chartMonthly" class="chart"></div>
+      </article>
+      <article class="card">
+        <div class="card-header"><h3>Funil comercial</h3><span class="mini" id="pipelineMini">0 leads</span></div>
+        <div class="pipeline" id="pipeline"></div>
+        <div id="chartSources" class="chart small"></div>
+      </article>
+    </section>
+
+    <section class="content-grid">
+      <article class="card">
+        <div class="card-header"><h3>Leads por status</h3><span class="mini">Distribuição atual</span></div>
+        <div id="chartStatus" class="chart small"></div>
+      </article>
+      <article class="card">
+        <div class="card-header"><h3>Conversão por fonte</h3><span class="mini">Taxa de venda por origem</span></div>
+        <div id="chartConversionSource" class="chart small"></div>
+      </article>
+    </section>
+
+    <section class="card table-card">
+      <div class="table-top">
+        <div><h3>Leads recentes</h3><div class="mini" id="tableMini">0 registros exibidos</div></div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:flex-end;">
+          <span class="apply-note" id="applyNote">Alterações pendentes</span>
+          <button class="btn primary" id="btnApplyChanges" style="display:none;">Aplicar alterações</button>
+          <button class="btn ghost" id="btnResetFilters">Remover filtros</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th><th>Nome</th><th>Fonte</th><th>Status</th><th>Valor</th><th>Data</th><th>Dias</th>
+            </tr>
+          </thead>
+          <tbody id="leadsTbody"></tbody>
+        </table>
+        <div class="empty" id="emptyState" style="display:none;">Nenhum lead encontrado com os filtros atuais.</div>
+      </div>
+    </section>
+
+    <div class="footer-note">
+      Observação: os dados ficam apenas no navegador via LocalStorage. Para compartilhar o painel, envie este arquivo HTML junto com o CSV ou use o botão de exportação.
+    </div>
+  </main>
+
+  <script>
+    const STATUS_ORDER = ['Captado', 'Visualizado', 'Tratado', 'Retorno', 'Fechado-Venda', 'Fechado-Perda'];
+    const STATUS_CLASS = {
+      'Captado': 'captado',
+      'Visualizado': 'visualizado',
+      'Tratado': 'tratado',
+      'Retorno': 'retorno',
+      'Fechado-Venda': 'fechado-venda',
+      'Fechado-Perda': 'fechado-perda'
+    };
+
+    const demoData = [
+      { id: 301, nome: 'Hospital Aeroporto', fonte: 'LinkedIn', status: 'Tratado', valor: 42500, data: '08/06/2026' },
+      { id: 300, nome: 'Condomínio Cielo', fonte: 'Indicação', status: 'Retorno', valor: 18700, data: '06/06/2026' },
+      { id: 299, nome: 'Grupo TPC', fonte: 'WhatsApp', status: 'Fechado-Venda', valor: 28900, data: '04/06/2026' },
+      { id: 298, nome: 'Lycos Equipamentos', fonte: 'LinkedIn', status: 'Visualizado', valor: 0, data: '03/06/2026' },
+      { id: 297, nome: 'Mercado Livre SBA1', fonte: 'Cliente ativo', status: 'Captado', valor: 15600, data: '02/06/2026' },
+      { id: 296, nome: 'Hospital Irmã Dulce', fonte: 'Indicação', status: 'Fechado-Venda', valor: 936546.65, data: '29/05/2026' },
+      { id: 295, nome: 'DHL Salvador', fonte: 'E-mail', status: 'Tratado', valor: 63400, data: '22/05/2026' },
+      { id: 294, nome: 'Clube Campomar', fonte: 'Site', status: 'Fechado-Perda', valor: 9700, data: '10/05/2026' },
+      { id: 293, nome: 'Raia Drogasil', fonte: 'WhatsApp', status: 'Retorno', valor: 3200, data: '18/04/2026' },
+      { id: 292, nome: 'Hospital Blanc', fonte: 'Cliente ativo', status: 'Tratado', valor: 112500, data: '02/04/2026' }
+    ];
+
+    let leadsData = loadStoredData() || demoData;
+    let filteredData = [];
+    let pendingChanges = {};
+
+    const el = id => document.getElementById(id);
+    const fmtCurrency = value => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: value >= 1000 ? 0 : 2 }).format(Number(value || 0));
+    const normalize = txt => String(txt ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
+    function parseDateBR(value) {
+      if (!value) return null;
+      const raw = String(value).trim();
+      let d, m, y;
+      if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
+        const date = new Date(raw + 'T00:00:00');
+        return isNaN(date) ? null : date;
+      }
+      const parts = raw.split(/[\/\-.]/).map(Number);
+      if (parts.length >= 3) {
+        [d, m, y] = parts;
+        if (y < 100) y += 2000;
+        const date = new Date(y, m - 1, d);
+        return isNaN(date) ? null : date;
+      }
+      return null;
+    }
+
+    function daysSince(dateText) {
+      const date = parseDateBR(dateText);
+      if (!date) return '';
+      const today = new Date();
+      const diff = Math.floor((today.setHours(0,0,0,0) - date.setHours(0,0,0,0)) / 86400000);
+      return diff < 0 ? 0 : diff;
+    }
+
+    function parseCurrencyBR(value) {
+      if (typeof value === 'number') return value;
+      const raw = String(value || '').replace(/R\$/gi, '').replace(/\s/g, '').trim();
+      if (!raw) return 0;
+      if (raw.includes(',') && raw.includes('.')) return Number(raw.replace(/\./g, '').replace(',', '.')) || 0;
+      if (raw.includes(',')) return Number(raw.replace(',', '.')) || 0;
+      return Number(raw) || 0;
+    }
+
+    function detectDelimiter(line) {
+      const semicolon = (line.match(/;/g) || []).length;
+      const comma = (line.match(/,/g) || []).length;
+      return semicolon > comma ? ';' : ',';
+    }
+
+    function splitCSVLine(line, delimiter) {
+      const result = [];
+      let current = '';
+      let quoted = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+          if (quoted && line[i + 1] === '"') { current += '"'; i++; }
+          else quoted = !quoted;
+        } else if (ch === delimiter && !quoted) {
+          result.push(current.trim()); current = '';
+        } else {
+          current += ch;
+        }
+      }
+      result.push(current.trim());
+      return result;
+    }
+
+    function parseCSV(text) {
+      const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/).filter(line => line.trim());
+      if (lines.length < 2) throw new Error('CSV vazio ou sem linhas de dados.');
+      const delimiter = detectDelimiter(lines[0]);
+      const headers = splitCSVLine(lines[0], delimiter).map(h => normalize(h));
+
+      const findHeader = names => names.map(normalize).map(n => headers.indexOf(n)).find(i => i >= 0);
+      const idx = {
+        id: findHeader(['id', 'codigo', 'código']),
+        nome: findHeader(['nome', 'cliente', 'lead', 'empresa']),
+        fonte: findHeader(['fonte', 'origem', 'canal']),
+        status: findHeader(['status', 'etapa', 'situacao', 'situação']),
+        valor: findHeader(['valor', 'valor potencial', 'proposta', 'orcamento', 'orçamento']),
+        data: findHeader(['data', 'data captacao', 'data captação', 'criado em'])
+      };
+
+      return lines.slice(1).map((line, index) => {
+        const values = splitCSVLine(line, delimiter);
+        const rawStatus = values[idx.status] || 'Captado';
+        const cleanStatus = matchStatus(rawStatus);
+        return {
+          id: values[idx.id] || index + 1,
+          nome: values[idx.nome] || 'Sem nome',
+          fonte: values[idx.fonte] || 'Não informado',
+          status: cleanStatus,
+          valor: parseCurrencyBR(values[idx.valor]),
+          data: values[idx.data] || ''
+        };
+      });
+    }
+
+    function matchStatus(status) {
+      const n = normalize(status).replace(/\s+/g, '-');
+      if (n.includes('venda') || n === 'fechado') return 'Fechado-Venda';
+      if (n.includes('perda') || n.includes('perdido')) return 'Fechado-Perda';
+      if (n.includes('visual')) return 'Visualizado';
+      if (n.includes('trat')) return 'Tratado';
+      if (n.includes('retorno') || n.includes('follow')) return 'Retorno';
+      return 'Captado';
+    }
+
+    function saveData() { localStorage.setItem('construtecLeadsData', JSON.stringify(leadsData)); }
+    function loadStoredData() {
+      try { return JSON.parse(localStorage.getItem('construtecLeadsData')); } catch { return null; }
+    }
+
+    function refreshFilters() {
+      const sources = [...new Set(leadsData.map(l => l.fonte).filter(Boolean))].sort();
+      const selectedSource = el('sourceFilter').value;
+      el('sourceFilter').innerHTML = '<option value="">Todas as fontes</option>' + sources.map(s => `<option value="${escapeHTML(s)}">${escapeHTML(s)}</option>`).join('');
+      el('sourceFilter').value = sources.includes(selectedSource) ? selectedSource : '';
+
+      const statuses = STATUS_ORDER.filter(s => leadsData.some(l => l.status === s));
+      const selectedStatus = el('statusFilter').value;
+      el('statusFilter').innerHTML = '<option value="">Todos os status</option>' + statuses.map(s => `<option value="${s}">${s}</option>`).join('');
+      el('statusFilter').value = statuses.includes(selectedStatus) ? selectedStatus : '';
+    }
+
+    function applyFilters() {
+      const q = normalize(el('searchInput').value);
+      const source = el('sourceFilter').value;
+      const status = el('statusFilter').value;
+      const period = Number(el('periodFilter').value || 0);
+      const today = new Date(); today.setHours(0,0,0,0);
+
+      filteredData = leadsData.filter(l => {
+        const matchesText = !q || [l.id, l.nome, l.fonte, l.status, l.valor, l.data].some(v => normalize(v).includes(q));
+        const matchesSource = !source || l.fonte === source;
+        const matchesStatus = !status || l.status === status;
+        let matchesPeriod = true;
+        if (period) {
+          const d = parseDateBR(l.data);
+          matchesPeriod = d ? ((today - d) / 86400000 <= period) : false;
+        }
+        return matchesText && matchesSource && matchesStatus && matchesPeriod;
+      }).sort((a, b) => (parseDateBR(b.data) || 0) - (parseDateBR(a.data) || 0));
+
+      renderAll();
+    }
+
+    function renderAll() {
+      renderKPIs();
+      renderAlert();
+      renderPipeline();
+      renderTable();
+      renderCharts();
+    }
+
+    function renderKPIs() {
+      const total = filteredData.length;
+      const sales = filteredData.filter(l => l.status === 'Fechado-Venda').length;
+      const pending = filteredData.filter(l => ['Captado', 'Visualizado', 'Retorno'].includes(l.status)).length;
+      const potential = filteredData.reduce((acc, l) => acc + Number(l.valor || 0), 0);
+      const conversion = total ? (sales / total * 100) : 0;
+      const treated = filteredData.filter(l => ['Tratado', 'Retorno', 'Fechado-Venda', 'Fechado-Perda'].includes(l.status)).length;
+
+      el('kpiTotal').textContent = total;
+      el('kpiConversion').textContent = conversion.toFixed(1).replace('.', ',') + '%';
+      el('kpiPotential').textContent = fmtCurrency(potential);
+      el('kpiPending').textContent = pending;
+      el('kpiTotalHelp').textContent = `${treated} leads já tiveram algum tratamento`;
+      el('kpiConversionHelp').textContent = `${sales} vendas fechadas`;
+      el('kpiPotentialHelp').textContent = `${fmtCurrency(potential / Math.max(total, 1))} ticket médio`;
+      el('kpiPendingHelp').textContent = pending ? 'Exigem priorização comercial' : 'Nenhuma pendência nos filtros';
+    }
+
+    function renderAlert() {
+      const delayed = filteredData.filter(l => ['Captado', 'Visualizado', 'Retorno'].includes(l.status) && Number(daysSince(l.data)) >= 3);
+      const highValueOpen = filteredData.filter(l => ['Captado', 'Visualizado', 'Retorno', 'Tratado'].includes(l.status) && Number(l.valor || 0) >= 10000);
+      const box = el('alertBox');
+      if (delayed.length || highValueOpen.length) {
+        box.classList.add('show');
+        el('alertText').innerHTML = `<strong>${delayed.length} leads</strong> sem avanço há 3 dias ou mais • <strong>${highValueOpen.length} oportunidades</strong> abertas acima de R$ 10 mil.`;
+      } else {
+        box.classList.remove('show');
+      }
+    }
+
+    function renderPipeline() {
+      const total = filteredData.length || 1;
+      el('pipelineMini').textContent = `${filteredData.length} leads filtrados`;
+      el('pipeline').innerHTML = STATUS_ORDER.map(status => {
+        const count = filteredData.filter(l => l.status === status).length;
+        const pct = (count / total) * 100;
+        return `<div class="pipe-row"><strong>${status}</strong><div class="bar"><span style="width:${pct}%"></span></div><span>${count}</span></div>`;
+      }).join('');
+    }
+
+    function renderTable() {
+      const tbody = el('leadsTbody');
+      el('tableMini').textContent = `${filteredData.length} registros exibidos`;
+      el('emptyState').style.display = filteredData.length ? 'none' : 'block';
+
+      tbody.innerHTML = filteredData.slice(0, 100).map(l => {
+        const dias = daysSince(l.data);
+        return `<tr>
+          <td>#${escapeHTML(l.id)}</td>
+          <td>
+            <input class="table-input" data-id="${escapeHTML(l.id)}" data-field="nome" value="${escapeHTML(l.nome)}">
+          </td>
+          <td>
+            <input class="table-input" data-id="${escapeHTML(l.id)}" data-field="fonte" value="${escapeHTML(l.fonte)}">
+          </td>
+          <td>
+            <select class="table-input" data-id="${escapeHTML(l.id)}" data-field="status">
+              ${STATUS_ORDER.map(s => `<option value="${s}" ${l.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+            </select>
+          </td>
+          <td>
+            <input class="table-input" data-id="${escapeHTML(l.id)}" data-field="valor" value="${Number(l.valor || 0)}">
+          </td>
+          <td>
+            <input class="table-input" data-id="${escapeHTML(l.id)}" data-field="data" value="${escapeHTML(l.data)}" placeholder="dd/mm/aaaa">
+          </td>
+          <td>${dias === '' ? '-' : dias + ' dia' + (dias == 1 ? '' : 's')}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function queueChangeFromInput(input) {
+      const id = input.dataset.id;
+      const field = input.dataset.field;
+      const value = input.value;
+      if (!id || !field) return;
+
+      if (!pendingChanges[id]) pendingChanges[id] = {};
+      pendingChanges[id][field] = value;
+
+      el('btnApplyChanges').style.display = 'inline-flex';
+      el('applyNote').classList.add('show');
+    }
+
+    function applyTableChanges() {
+      Object.entries(pendingChanges).forEach(([id, changes]) => {
+        const lead = leadsData.find(l => String(l.id) === String(id));
+        if (!lead) return;
+
+        Object.entries(changes).forEach(([field, value]) => {
+          if (field === 'valor') {
+            lead[field] = parseCurrencyBR(value);
+          } else if (field === 'status') {
+            lead[field] = matchStatus(value);
+          } else {
+            lead[field] = value;
+          }
+        });
+      });
+
+      pendingChanges = {};
+      saveData();
+      refreshFilters();
+      applyFilters();
+
+      el('btnApplyChanges').style.display = 'none';
+      el('applyNote').classList.remove('show');
+    }
+
+    function renderCharts() {
+      const baseLayout = {
+        paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+        font: { color: '#172033', family: 'Inter, Segoe UI, Arial' },
+        margin: { t: 12, b: 38, l: 46, r: 18 },
+        xaxis: { gridcolor: '#e2e8f0', zerolinecolor: '#e2e8f0' },
+        yaxis: { gridcolor: '#e2e8f0', zerolinecolor: '#e2e8f0' }
+      };
+      const config = { responsive: true, displayModeBar: false };
+
+      const monthly = {};
+      filteredData.forEach(l => {
+        const d = parseDateBR(l.data);
+        const key = d ? `${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}` : 'Sem data';
+        monthly[key] = (monthly[key] || 0) + 1;
+      });
+      const monthlyKeys = Object.keys(monthly).sort((a,b) => {
+        if (a === 'Sem data') return 1; if (b === 'Sem data') return -1;
+        const [ma, ya] = a.split('/').map(Number); const [mb, yb] = b.split('/').map(Number);
+        return new Date(ya, ma-1) - new Date(yb, mb-1);
+      });
+      Plotly.newPlot('chartMonthly', [{ x: monthlyKeys, y: monthlyKeys.map(k => monthly[k]), type: 'bar', marker: { color: '#176b87' } }], baseLayout, config);
+
+      const sourceCounts = countBy(filteredData, 'fonte');
+      const sourceRows = Object.entries(sourceCounts).sort((a,b) => b[1] - a[1]).slice(0, 7);
+      Plotly.newPlot('chartSources', [{ x: sourceRows.map(r => r[1]), y: sourceRows.map(r => r[0]), type: 'bar', orientation: 'h', marker: { color: '#0f3b5f' } }], { ...baseLayout, margin: { t: 8, b: 30, l: 110, r: 18 } }, config);
+
+      const statusCounts = STATUS_ORDER.map(status => filteredData.filter(l => l.status === status).length);
+      Plotly.newPlot('chartStatus', [{ labels: STATUS_ORDER, values: statusCounts, type: 'pie', hole: .52, marker: { colors: ['#f59e0b','#0284c7','#2563eb','#7c3aed','#16a34a','#dc2626'] }, textinfo: 'label+percent' }], { ...baseLayout, showlegend: false, margin: { t: 8, b: 8, l: 8, r: 8 } }, config);
+
+      const sourceTotals = {};
+      const sourceSales = {};
+      filteredData.forEach(l => { sourceTotals[l.fonte] = (sourceTotals[l.fonte] || 0) + 1; if (l.status === 'Fechado-Venda') sourceSales[l.fonte] = (sourceSales[l.fonte] || 0) + 1; });
+      const convRows = Object.keys(sourceTotals).map(fonte => [fonte, (sourceSales[fonte] || 0) / sourceTotals[fonte] * 100]).sort((a,b) => b[1] - a[1]).slice(0, 7);
+      Plotly.newPlot('chartConversionSource', [{ x: convRows.map(r => r[0]), y: convRows.map(r => Number(r[1].toFixed(1))), type: 'bar', marker: { color: '#16a34a' } }], { ...baseLayout, yaxis: { ...baseLayout.yaxis, ticksuffix: '%' } }, config);
+    }
+
+    function countBy(data, key) {
+      return data.reduce((acc, item) => { acc[item[key] || 'Não informado'] = (acc[item[key] || 'Não informado'] || 0) + 1; return acc; }, {});
+    }
+
+    function escapeHTML(value) {
+      return String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[ch]));
+    }
+
+    function exportCSV() {
+      const rows = [['ID','Nome','Fonte','Status','Valor','Data'], ...filteredData.map(l => [l.id, l.nome, l.fonte, l.status, String(l.valor).replace('.', ','), l.data])];
+      const csv = rows.map(row => row.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(';')).join('\n');
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'leads_construtec_filtrados.csv'; a.click(); URL.revokeObjectURL(url);
+    }
+
+    el('csvFileInput').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = event => {
+        try {
+          leadsData = parseCSV(event.target.result);
+          saveData();
+          el('fileName').textContent = `Arquivo carregado: ${file.name} • ${leadsData.length} leads`;
+          refreshFilters();
+          applyFilters();
+        } catch (err) {
+          alert(err.message || 'Não foi possível importar o CSV.');
+        }
+      };
+      reader.readAsText(file, 'UTF-8');
+    });
+
+    ['searchInput','sourceFilter','statusFilter','periodFilter'].forEach(id => el(id).addEventListener('input', applyFilters));
+    el('btnResetFilters').addEventListener('click', () => { el('searchInput').value=''; el('sourceFilter').value=''; el('statusFilter').value=''; el('periodFilter').value=''; applyFilters(); });
+    el('btnDemo').addEventListener('click', () => { leadsData = demoData; saveData(); el('fileName').textContent = 'Exemplo carregado'; refreshFilters(); applyFilters(); });
+    el('btnClear').addEventListener('click', () => { if (confirm('Deseja limpar todos os dados salvos neste navegador?')) { leadsData = []; saveData(); refreshFilters(); applyFilters(); } });
+    el('btnExport').addEventListener('click', exportCSV);
+    el('btnApplyChanges').addEventListener('click', applyTableChanges);
+
+    el('leadsTbody').addEventListener('input', e => {
+      if (e.target.classList.contains('table-input')) queueChangeFromInput(e.target);
+    });
+
+    el('leadsTbody').addEventListener('change', e => {
+      if (e.target.classList.contains('table-input')) queueChangeFromInput(e.target);
+    });
+
+    refreshFilters();
+    applyFilters();
+  </script>
+</body>
+</html>
