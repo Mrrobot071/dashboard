@@ -9,988 +9,1138 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    :root{
-      --bg:#f4f7fb;
-      --panel:#fff;
-      --text:#172033;
-      --muted:#64748b;
-      --line:#e2e8f0;
-      --brand:#0f3b5f;
-      --brand2:#176b87;
-      --ok:#16a34a;
-      --warn:#f59e0b;
-      --bad:#dc2626;
-      --purple:#7c3aed;
-      --radius:18px;
-      --shadow:0 12px 28px rgba(15,59,95,.09);
+    :root {
+      --bg: #f3f6f8;
+      --panel: #ffffff;
+      --panel-soft: #f8fafc;
+      --ink: #172033;
+      --muted: #64748b;
+      --line: #d8e0ea;
+      --brand: #12395a;
+      --brand-2: #176b87;
+      --aqua: #22a7a8;
+      --green: #15803d;
+      --amber: #b45309;
+      --red: #b91c1c;
+      --purple: #6d28d9;
+      --shadow: 0 14px 34px rgba(18, 57, 90, .09);
+      --radius: 8px;
     }
 
-    *{box-sizing:border-box}
-
-    body{
-      margin:0;
-      font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;
-      background:linear-gradient(180deg,#f8fbff,var(--bg));
-      color:var(--text);
+    * {
+      box-sizing: border-box;
     }
 
-    .page{
-      width:min(1440px,calc(100% - 32px));
-      margin:auto;
-      padding:26px 0 42px;
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .78), rgba(243, 246, 248, .96)),
+        radial-gradient(circle at top left, rgba(34, 167, 168, .14), transparent 34rem),
+        var(--bg);
     }
 
-    .top{
-      display:flex;
-      justify-content:space-between;
-      gap:16px;
-      align-items:center;
-      margin-bottom:18px;
+    button,
+    input,
+    select {
+      font: inherit;
     }
 
-    .logo{
-      width:52px;
-      height:52px;
-      border-radius:16px;
-      background:linear-gradient(135deg,var(--brand),var(--brand2));
-      display:grid;
-      place-items:center;
-      color:#fff;
-      font-weight:900;
-      box-shadow:var(--shadow);
+    .page {
+      width: min(1500px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 22px 0 34px;
     }
 
-    .brand{
-      display:flex;
-      align-items:center;
-      gap:14px;
+    .topbar,
+    .sync-strip,
+    .table-top,
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
     }
 
-    h1{
-      margin:0;
-      font-size:clamp(1.6rem,2.6vw,2.55rem);
-      letter-spacing:-.04em;
+    .topbar {
+      padding-bottom: 16px;
     }
 
-    .sub{
-      color:var(--muted);
-      margin-top:5px;
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
     }
 
-    .actions{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
+    .mark {
+      width: 46px;
+      height: 46px;
+      border-radius: var(--radius);
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      color: #fff;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      box-shadow: var(--shadow);
     }
 
-    .btn,input,select{font:inherit}
-
-    .btn{
-      border:1px solid var(--line);
-      background:var(--panel);
-      border-radius:12px;
-      padding:10px 14px;
-      cursor:pointer;
-      font-weight:750;
+    h1,
+    h2 {
+      margin: 0;
+      line-height: 1.15;
     }
 
-    .btn.primary{
-      background:var(--brand);
-      border-color:var(--brand);
-      color:white;
+    h1 {
+      font-size: clamp(1.45rem, 2.4vw, 2.35rem);
+      font-weight: 900;
     }
 
-    .btn.danger{color:var(--bad)}
-
-    .btn:hover{
-      box-shadow:0 8px 16px rgba(15,59,95,.08);
-      transform:translateY(-1px);
+    h2 {
+      font-size: 1rem;
+      font-weight: 850;
     }
 
-    .sync{
-      background:linear-gradient(135deg,var(--brand),#0f526d);
-      color:#fff;
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-      padding:18px 20px;
-      display:flex;
-      justify-content:space-between;
-      gap:16px;
-      align-items:center;
-      margin-bottom:16px;
+    .subtitle,
+    .mini,
+    .footer,
+    .kpi-help {
+      color: var(--muted);
     }
 
-    .sync b{font-size:1.05rem}
-    .sync small{color:rgba(255,255,255,.78)}
-
-    .dot{
-      display:inline-block;
-      width:10px;
-      height:10px;
-      border-radius:50%;
-      background:#22c55e;
-      margin-right:8px;
-      box-shadow:0 0 0 5px rgba(34,197,94,.15);
+    .subtitle {
+      margin-top: 4px;
+      font-size: .95rem;
     }
 
-    .dot.off{
-      background:#ef4444;
-      box-shadow:0 0 0 5px rgba(239,68,68,.15);
+    .actions,
+    .table-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
     }
 
-    .toolbar{
-      display:grid;
-      grid-template-columns:1.3fr repeat(3,minmax(150px,.45fr));
-      gap:12px;
-      margin-bottom:16px;
+    .btn {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      background: var(--panel);
+      color: var(--ink);
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
     }
 
-    .control{
-      border:1px solid var(--line);
-      background:var(--panel);
-      border-radius:14px;
-      padding:11px 13px;
-      min-height:44px;
-      outline:none;
+    .btn:hover {
+      border-color: #b8c4d2;
+      box-shadow: 0 10px 22px rgba(18, 57, 90, .11);
+      transform: translateY(-1px);
     }
 
-    .control:focus{
-      border-color:var(--brand2);
-      box-shadow:0 0 0 4px rgba(23,107,135,.09);
+    .btn.primary {
+      background: var(--brand);
+      border-color: var(--brand);
+      color: #fff;
     }
 
-    .kpis{
-      display:grid;
-      grid-template-columns:repeat(4,1fr);
-      gap:14px;
-      margin-bottom:16px;
+    .btn.danger {
+      color: var(--red);
     }
 
-    .kpi{
-      background:var(--panel);
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      padding:18px;
-      box-shadow:var(--shadow);
-      overflow:hidden;
-      position:relative;
+    .sync-strip {
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      border: 1px solid rgba(23, 107, 135, .22);
+      border-radius: var(--radius);
+      color: #fff;
+      background: linear-gradient(135deg, var(--brand), #0d5d72);
+      box-shadow: var(--shadow);
     }
 
-    .kpi:before{
-      content:"";
-      position:absolute;
-      inset:0 0 auto;
-      height:4px;
-      background:var(--brand2);
+    .sync-main {
+      font-weight: 900;
     }
 
-    .kpi.ok:before{background:var(--ok)}
-    .kpi.warn:before{background:var(--warn)}
-    .kpi.purple:before{background:var(--purple)}
-
-    .lbl{
-      color:var(--muted);
-      font-weight:850;
-      text-transform:uppercase;
-      font-size:.82rem;
-      letter-spacing:.05em;
+    .sync-note {
+      color: rgba(255, 255, 255, .78);
+      font-size: .9rem;
+      margin-top: 3px;
     }
 
-    .val{
-      font-size:clamp(1.55rem,2.6vw,2.45rem);
-      font-weight:900;
-      margin-top:10px;
-      letter-spacing:-.04em;
+    .dot {
+      width: 10px;
+      height: 10px;
+      display: inline-block;
+      margin-right: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 0 5px rgba(34, 197, 94, .18);
     }
 
-    .help{
-      color:var(--muted);
-      margin-top:8px;
-      font-size:.9rem;
+    .dot.off {
+      background: #ef4444;
+      box-shadow: 0 0 0 5px rgba(239, 68, 68, .2);
     }
 
-    .grid{
-      display:grid;
-      grid-template-columns:minmax(0,1.2fr) minmax(340px,.8fr);
-      gap:16px;
-      margin-bottom:16px;
+    .toolbar {
+      display: grid;
+      grid-template-columns: minmax(260px, 1.4fr) repeat(5, minmax(140px, .55fr));
+      gap: 10px;
+      margin-bottom: 14px;
     }
 
-    .card{
-      background:var(--panel);
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      padding:18px;
-      box-shadow:var(--shadow);
+    .control {
+      width: 100%;
+      min-height: 41px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      color: var(--ink);
+      padding: 8px 10px;
+      outline: none;
     }
 
-    .card h3{margin:0}
-
-    .card-head{
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      margin-bottom:10px;
-      align-items:center;
+    .control:focus,
+    .table-input:focus {
+      border-color: var(--brand-2);
+      box-shadow: 0 0 0 3px rgba(23, 107, 135, .13);
     }
 
-    .mini{
-      color:var(--muted);
-      font-size:.88rem;
+    .alert {
+      display: none;
+      border: 1px solid #fed7aa;
+      border-left: 4px solid var(--amber);
+      border-radius: var(--radius);
+      padding: 11px 13px;
+      margin-bottom: 14px;
+      color: #7c2d12;
+      background: #fff7ed;
+      line-height: 1.35;
     }
 
-    .chart{min-height:320px}
-    .chart.small{min-height:250px}
-
-    .pipe{display:grid;gap:10px}
-
-    .pipe-row{
-      display:grid;
-      grid-template-columns:140px 1fr auto;
-      gap:10px;
-      align-items:center;
+    .alert.show {
+      display: block;
     }
 
-    .bar{
-      height:11px;
-      background:#e2e8f0;
-      border-radius:99px;
-      overflow:hidden;
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 14px;
     }
 
-    .bar span{
-      display:block;
-      height:100%;
-      background:var(--brand2);
-      border-radius:inherit;
+    .kpi,
+    .card {
+      background: rgba(255, 255, 255, .96);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
     }
 
-    .table-card{
-      padding:0;
-      overflow:hidden;
+    .kpi {
+      position: relative;
+      overflow: hidden;
+      padding: 15px;
+      min-height: 118px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
 
-    .table-top{
-      padding:18px;
-      border-bottom:1px solid var(--line);
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      align-items:center;
+    .kpi::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 4px;
+      background: var(--brand-2);
     }
 
-    .table-wrap{
-      overflow:auto;
-      max-height:560px;
+    .kpi.green::before { background: var(--green); }
+    .kpi.purple::before { background: var(--purple); }
+    .kpi.amber::before { background: var(--amber); }
+
+    .kpi-label {
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .04em;
     }
 
-    table{
-      width:100%;
-      border-collapse:collapse;
-      min-width:1120px;
+    .kpi-value {
+      margin: 12px 0 7px;
+      font-size: clamp(1.65rem, 2.5vw, 2.35rem);
+      line-height: 1;
+      font-weight: 950;
     }
 
-    th,td{
-      padding:12px 14px;
-      border-bottom:1px solid var(--line);
-      text-align:left;
-      white-space:nowrap;
+    .kpi-help,
+    .mini,
+    .footer {
+      font-size: .88rem;
+      line-height: 1.3;
     }
 
-    th{
-      position:sticky;
-      top:0;
-      background:#f8fafc;
-      z-index:1;
-      color:#334155;
-      font-size:.78rem;
-      text-transform:uppercase;
-      letter-spacing:.04em;
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.18fr) minmax(350px, .82fr);
+      gap: 14px;
+      margin-bottom: 14px;
     }
 
-    tbody tr:hover{background:#f8fafc}
-
-    .table-input{
-      width:100%;
-      min-width:115px;
-      border:1px solid var(--line);
-      border-radius:10px;
-      padding:8px;
-      background:#fff;
+    .card {
+      min-width: 0;
+      padding: 14px;
     }
 
-    .empty{
-      text-align:center;
-      color:var(--muted);
-      padding:28px;
+    .chart {
+      width: 100%;
+      min-height: 300px;
     }
 
-    .footer{
-      color:var(--muted);
-      font-size:.88rem;
-      line-height:1.45;
-      margin-top:12px;
+    .chart.small {
+      min-height: 250px;
     }
 
-    .toast{
-      position:fixed;
-      right:18px;
-      bottom:18px;
-      background:#111827;
-      color:#fff;
-      padding:12px 14px;
-      border-radius:12px;
-      box-shadow:var(--shadow);
-      display:none;
-      z-index:10;
+    .fallback-chart {
+      min-height: 220px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      background: var(--panel-soft);
+      border: 1px dashed var(--line);
+      border-radius: var(--radius);
+      text-align: center;
+      padding: 18px;
     }
 
-    .toast.show{display:block}
-
-    @media(max-width:1100px){
-      .kpis{grid-template-columns:repeat(2,1fr)}
-      .grid{grid-template-columns:1fr}
-      .toolbar{grid-template-columns:1fr 1fr}
+    .pipeline {
+      display: grid;
+      gap: 9px;
+      margin-bottom: 14px;
     }
 
-    @media(max-width:760px){
-      .top,.sync,.table-top{flex-direction:column;align-items:stretch}
-      .actions{justify-content:stretch}
-      .toolbar,.kpis{grid-template-columns:1fr}
-      .page{width:min(100% - 20px,1440px)}
+    .pipe-row {
+      display: grid;
+      grid-template-columns: 138px minmax(100px, 1fr) 42px;
+      align-items: center;
+      gap: 10px;
+      font-size: .9rem;
+    }
+
+    .pipe-row strong {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: .88rem;
+    }
+
+    .bar {
+      height: 9px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #e5e7eb;
+    }
+
+    .bar span {
+      display: block;
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--brand-2);
+    }
+
+    .pipe-row:nth-child(2) .bar span { background: #1d4ed8; }
+    .pipe-row:nth-child(3) .bar span { background: var(--aqua); }
+    .pipe-row:nth-child(4) .bar span { background: var(--purple); }
+    .pipe-row:nth-child(5) .bar span { background: var(--green); }
+    .pipe-row:nth-child(6) .bar span { background: var(--red); }
+
+    .table-card {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .table-top {
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .table-wrap {
+      max-height: 580px;
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      min-width: 1360px;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      color: #344054;
+      background: var(--panel-soft);
+      font-size: .76rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    tbody tr:hover {
+      background: #fbfcfe;
+    }
+
+    .table-input {
+      width: 100%;
+      min-width: 112px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 7px 8px;
+      color: var(--ink);
+      background: #fff;
+      outline: none;
+    }
+
+    .name-input { min-width: 220px; }
+    .action-input { min-width: 260px; }
+    .link-input { min-width: 220px; }
+
+    .empty {
+      display: none;
+      padding: 26px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 20;
+      display: none;
+      max-width: min(420px, calc(100vw - 36px));
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      color: #fff;
+      background: #101828;
+      box-shadow: var(--shadow);
+      line-height: 1.35;
+    }
+
+    .toast.show {
+      display: block;
+    }
+
+    .footer {
+      margin-top: 12px;
+    }
+
+    @media (max-width: 1180px) {
+      .toolbar {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .toolbar .search {
+        grid-column: span 3;
+      }
+
+      .kpis {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        width: min(100% - 20px, 1500px);
+        padding-top: 12px;
+      }
+
+      .topbar,
+      .sync-strip,
+      .table-top {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .actions,
+      .table-actions {
+        justify-content: flex-start;
+      }
+
+      .toolbar,
+      .kpis {
+        grid-template-columns: 1fr;
+      }
+
+      .toolbar .search {
+        grid-column: auto;
+      }
+
+      .pipe-row {
+        grid-template-columns: 116px minmax(80px, 1fr) 34px;
+      }
     }
   </style>
 </head>
 <body>
-<main class="page">
-  <section class="top">
-    <div class="brand">
-      <div class="logo">CT</div>
-      <div>
-        <h1>Dashboard Online de Leads</h1>
-        <div class="sub">Construtec Engenharia • Supabase alimentando o painel automaticamente</div>
+  <main class="page">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark">CT</div>
+        <div>
+          <h1>Dashboard Online de Leads</h1>
+          <div class="subtitle">Construtec Engenharia | Supabase alimentando pipeline, prioridade e conversão</div>
+        </div>
       </div>
-    </div>
 
-    <div class="actions">
-      <button class="btn" id="btnRefresh">Atualizar agora</button>
-      <button class="btn primary" id="btnAdd">Novo lead</button>
-    </div>
-  </section>
-
-  <section class="sync">
-    <div>
-      <b><span class="dot" id="syncDot"></span><span id="syncStatus">Conectando ao Supabase...</span></b><br>
-      <small id="syncInfo">Atualização automática a cada 10 segundos</small>
-    </div>
-    <div><small>Banco base: <b>Supabase / leads</b></small></div>
-  </section>
-
-  <section class="toolbar">
-    <input class="control" id="searchInput" placeholder="Buscar por nome, fonte, status, telefone, e-mail ou link..."/>
-    <select class="control" id="sourceFilter"><option value="">Todas as fontes</option></select>
-    <select class="control" id="statusFilter"><option value="">Todos os status</option></select>
-    <select class="control" id="periodFilter">
-      <option value="">Todo período</option>
-      <option value="7">Últimos 7 dias</option>
-      <option value="30">Últimos 30 dias</option>
-      <option value="90">Últimos 90 dias</option>
-    </select>
-  </section>
-
-  <section class="kpis">
-    <div class="kpi">
-      <div class="lbl">Total de leads</div>
-      <div class="val" id="kpiTotal">0</div>
-      <div class="help" id="kpiTotalHelp">Base carregada</div>
-    </div>
-    <div class="kpi ok">
-      <div class="lbl">Conversão em venda</div>
-      <div class="val" id="kpiConversion">0%</div>
-      <div class="help" id="kpiConversionHelp">Fechado-venda / total</div>
-    </div>
-    <div class="kpi purple">
-      <div class="lbl">Valor potencial</div>
-      <div class="val" id="kpiPotential">R$ 0</div>
-      <div class="help" id="kpiPotentialHelp">Soma filtrada</div>
-    </div>
-    <div class="kpi warn">
-      <div class="lbl">Pendentes</div>
-      <div class="val" id="kpiPending">0</div>
-      <div class="help" id="kpiPendingHelp">Captado, visualizado ou retorno</div>
-    </div>
-  </section>
-
-  <section class="grid">
-    <article class="card">
-      <div class="card-head"><h3>Evolução mensal</h3><span class="mini">Leads por mês</span></div>
-      <div id="chartMonthly" class="chart"></div>
-    </article>
-    <article class="card">
-      <div class="card-head"><h3>Funil comercial</h3><span class="mini" id="pipelineMini">0 leads</span></div>
-      <div class="pipe" id="pipeline"></div>
-      <div id="chartSources" class="chart small"></div>
-    </article>
-  </section>
-
-  <section class="grid">
-    <article class="card">
-      <div class="card-head"><h3>Leads por status</h3><span class="mini">Distribuição atual</span></div>
-      <div id="chartStatus" class="chart small"></div>
-    </article>
-    <article class="card">
-      <div class="card-head"><h3>Conversão por fonte</h3><span class="mini">Taxa por origem</span></div>
-      <div id="chartConversionSource" class="chart small"></div>
-    </article>
-  </section>
-
-  <section class="card table-card">
-    <div class="table-top">
-      <div>
-        <h3>Base conectada</h3>
-        <div class="mini" id="tableMini">0 registros</div>
+      <div class="actions">
+        <button class="btn" id="btnRefresh">Atualizar</button>
+        <button class="btn primary" id="btnAdd">Novo lead</button>
       </div>
-      <button class="btn" id="btnReset">Remover filtros</button>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Nome</th>
-            <th>Fonte</th>
-            <th>Status</th>
-            <th>Valor</th>
-            <th>Data</th>
-            <th>Número</th>
-            <th>E-mail</th>
-            <th>Link/Perfil</th>
-            <th>Ação</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-      <div class="empty" id="empty" style="display:none">Nenhum lead encontrado.</div>
-    </div>
-  </section>
+    </header>
 
-  <div class="footer">
-    Este painel consulta a tabela <b>leads</b> no Supabase. Quando você cria, edita ou exclui um lead, a alteração é salva diretamente no banco online. A tela atualiza automaticamente a cada 10 segundos.
-  </div>
-</main>
+    <section class="sync-strip">
+      <div>
+        <div class="sync-main"><span class="dot" id="syncDot"></span><span id="syncStatus">Conectando ao Supabase...</span></div>
+        <div class="sync-note" id="syncInfo">Aguardando leitura da tabela leads.</div>
+      </div>
+      <div class="sync-note">Banco: <strong>Supabase / public.leads</strong></div>
+    </section>
 
-<div class="toast" id="toast"></div>
+    <section class="toolbar" aria-label="Filtros">
+      <input class="control search" id="searchInput" placeholder="Buscar lead, empresa, fonte, segmento, status, telefone, e-mail ou ação..." />
+      <select class="control" id="sourceFilter"><option value="">Todas as fontes</option></select>
+      <select class="control" id="statusFilter"><option value="">Todos os status</option></select>
+      <select class="control" id="priorityFilter"><option value="">Todas as prioridades</option></select>
+      <select class="control" id="segmentFilter"><option value="">Todos os segmentos</option></select>
+      <select class="control" id="periodFilter">
+        <option value="">Todo período</option>
+        <option value="7">Últimos 7 dias</option>
+        <option value="30">Últimos 30 dias</option>
+        <option value="90">Últimos 90 dias</option>
+      </select>
+    </section>
 
-<script>
-const SUPABASE_URL = 'https://cjlzzhjdkkpgzfnnatlj.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_gJ1LkHbIwm7bi_mvcn5bnw_hNPChxR-';
+    <section class="alert" id="alertBox">
+      <span id="alertText"></span>
+    </section>
 
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    <section class="kpis">
+      <article class="kpi">
+        <div class="kpi-label">Total de leads</div>
+        <div class="kpi-value" id="kpiTotal">0</div>
+        <div class="kpi-help" id="kpiTotalHelp">Base online</div>
+      </article>
+      <article class="kpi green">
+        <div class="kpi-label">Conversão</div>
+        <div class="kpi-value" id="kpiConversion">0%</div>
+        <div class="kpi-help" id="kpiConversionHelp">Vendas / leads</div>
+      </article>
+      <article class="kpi purple">
+        <div class="kpi-label">Valor potencial</div>
+        <div class="kpi-value" id="kpiPotential">R$ 0</div>
+        <div class="kpi-help" id="kpiPotentialHelp">Soma filtrada</div>
+      </article>
+      <article class="kpi amber">
+        <div class="kpi-label">Leads quentes</div>
+        <div class="kpi-value" id="kpiHot">0</div>
+        <div class="kpi-help" id="kpiHotHelp">Prioridade comercial</div>
+      </article>
+    </section>
 
-const STATUS_ORDER = [
-  'Captado',
-  'Visualizado',
-  'Tratado',
-  'Retorno',
-  'Fechado-Venda',
-  'Fechado-Perda'
-];
+    <section class="grid">
+      <article class="card">
+        <div class="card-head">
+          <h2>Evolução mensal</h2>
+          <span class="mini">Leads por mês</span>
+        </div>
+        <div id="chartMonthly" class="chart"></div>
+      </article>
 
-let leadsData = [];
-let filteredData = [];
+      <article class="card">
+        <div class="card-head">
+          <h2>Funil comercial</h2>
+          <span class="mini" id="pipelineMini">0 leads</span>
+        </div>
+        <div class="pipeline" id="pipeline"></div>
+        <div id="chartSources" class="chart small"></div>
+      </article>
+    </section>
 
-const el = id => document.getElementById(id);
+    <section class="grid">
+      <article class="card">
+        <div class="card-head">
+          <h2>Leads por status</h2>
+          <span class="mini">Distribuição atual</span>
+        </div>
+        <div id="chartStatus" class="chart small"></div>
+      </article>
 
-const normalize = t =>
-  String(t ?? '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim();
+      <article class="card">
+        <div class="card-head">
+          <h2>Conversão por fonte</h2>
+          <span class="mini">Taxa de venda por origem</span>
+        </div>
+        <div id="chartConversionSource" class="chart small"></div>
+      </article>
+    </section>
 
-const money = v =>
-  new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    maximumFractionDigits: Number(v) >= 1000 ? 0 : 2
-  }).format(Number(v || 0));
+    <section class="card table-card">
+      <div class="table-top">
+        <div>
+          <h2>Base conectada</h2>
+          <div class="mini" id="tableMini">0 registros exibidos</div>
+        </div>
+        <div class="table-actions">
+          <button class="btn" id="btnResetFilters">Remover filtros</button>
+          <button class="btn" id="btnExport">Exportar CSV</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nome</th>
+              <th>Fonte</th>
+              <th>Segmento</th>
+              <th>Prioridade</th>
+              <th>Score</th>
+              <th>Status</th>
+              <th>Valor</th>
+              <th>Data</th>
+              <th>Número</th>
+              <th>E-mail</th>
+              <th>Link</th>
+              <th>Próxima ação</th>
+              <th>Dias</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody id="leadsTbody"></tbody>
+        </table>
+        <div class="empty" id="emptyState">Nenhum lead encontrado com os filtros atuais.</div>
+      </div>
+    </section>
 
-function toast(msg) {
-  el('toast').textContent = msg;
-  el('toast').classList.add('show');
+    <footer class="footer">
+      Este painel consulta a tabela <strong>leads</strong> no Supabase. Criação, edição e exclusão são salvas no banco online.
+    </footer>
+  </main>
 
-  setTimeout(() => {
-    el('toast').classList.remove('show');
-  }, 2600);
-}
+  <div class="toast" id="toast"></div>
 
-function parseDateBR(value) {
-  if (!value) return null;
+  <script>
+    const SUPABASE_URL = 'https://cjlzzhjdkkpgzfnnatlj.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_gJ1LkHbIwm7bi_mvcn5bnw_hNPChxR-';
+    const STATUS_ORDER = ['Captado', 'Visualizado', 'Tratado', 'Retorno', 'Fechado-Venda', 'Fechado-Perda'];
+    const PRIORITY_ORDER = ['Quente', 'Morno', 'Frio'];
 
-  const raw = String(value).trim();
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let leadsData = [];
+    let filteredData = [];
 
-  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
-    const d = new Date(raw + 'T00:00:00');
-    return isNaN(d) ? null : d;
-  }
+    const el = id => document.getElementById(id);
+    const normalize = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    const fmtCurrency = value => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: Number(value) >= 1000 ? 0 : 2 }).format(Number(value || 0));
 
-  const p = raw.split(/[\/\-.]/).map(Number);
+    function toast(message) {
+      el('toast').textContent = message;
+      el('toast').classList.add('show');
+      setTimeout(() => el('toast').classList.remove('show'), 2800);
+    }
 
-  if (p.length >= 3) {
-    let [d, m, y] = p;
+    function escapeHTML(value) {
+      return String(value ?? '').replace(/[&<>'"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[ch]));
+    }
 
-    if (y < 100) y += 2000;
+    function parseDateBR(value) {
+      if (!value) return null;
+      const raw = String(value).trim();
+      if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
+        const date = new Date(raw.slice(0, 10) + 'T00:00:00');
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+      const parts = raw.split(/[\/\-.]/).map(Number);
+      if (parts.length >= 3) {
+        let [d, m, y] = parts;
+        if (y < 100) y += 2000;
+        const date = new Date(y, m - 1, d);
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+      return null;
+    }
 
-    const dt = new Date(y, m - 1, d);
-    return isNaN(dt) ? null : dt;
-  }
+    function daysSince(dateText) {
+      const date = parseDateBR(dateText);
+      if (!date) return '';
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      date.setHours(0, 0, 0, 0);
+      const diff = Math.floor((today - date) / 86400000);
+      return diff < 0 ? 0 : diff;
+    }
 
-  return null;
-}
+    function parseCurrencyBR(value) {
+      if (typeof value === 'number') return value;
+      const raw = String(value || '').replace(/R\$/gi, '').replace(/\s/g, '').trim();
+      if (!raw) return 0;
+      if (raw.includes(',') && raw.includes('.')) return Number(raw.replace(/\./g, '').replace(',', '.')) || 0;
+      if (raw.includes(',')) return Number(raw.replace(',', '.')) || 0;
+      return Number(raw) || 0;
+    }
 
-function parseCurrency(v) {
-  if (typeof v === 'number') return v;
+    function matchStatus(status) {
+      const n = normalize(status).replace(/\s+/g, '-');
+      if (n.includes('venda') || n === 'fechado') return 'Fechado-Venda';
+      if (n.includes('perda') || n.includes('perdido')) return 'Fechado-Perda';
+      if (n.includes('visual')) return 'Visualizado';
+      if (n.includes('trat')) return 'Tratado';
+      if (n.includes('retorno') || n.includes('follow')) return 'Retorno';
+      return 'Captado';
+    }
 
-  const raw = String(v || '')
-    .replace(/R\$/gi, '')
-    .replace(/\s/g, '')
-    .trim();
+    function matchPriority(priority, score = 0) {
+      const n = normalize(priority);
+      if (n.includes('quent')) return 'Quente';
+      if (n.includes('morn')) return 'Morno';
+      if (n.includes('fri')) return 'Frio';
+      if (Number(score) >= 70) return 'Quente';
+      if (Number(score) >= 40) return 'Morno';
+      return 'Frio';
+    }
 
-  if (!raw) return 0;
+    function normalizeLead(row) {
+      const score = Number(row.score || 0);
+      const nome = row.nome || row.lead || row.empresa || 'Sem nome';
+      return {
+        id: row.id ?? '',
+        lead: row.lead || nome,
+        nome,
+        empresa: row.empresa || nome,
+        fonte: row.fonte || row.origem_base || 'Não informado',
+        segmento: row.segmento || row.categoria || 'Não classificado',
+        prioridade: matchPriority(row.prioridade, score),
+        score,
+        proxima_acao: row.proxima_acao || row.observacao || 'Revisar e qualificar',
+        status: matchStatus(row.status || 'Captado'),
+        valor: parseCurrencyBR(row.valor),
+        data: row.data || row.created_at || '',
+        numero: row.numero || row.telefone || '',
+        telefone: row.telefone || row.numero || '',
+        email: row.email || '',
+        link: row.link || row.perfil || row.site || '',
+        perfil: row.perfil || row.link || '',
+        site: row.site || '',
+        observacao: row.observacao || '',
+        _raw: row
+      };
+    }
 
-  if (raw.includes(',') && raw.includes('.')) {
-    return Number(raw.replace(/\./g, '').replace(',', '.')) || 0;
-  }
+    async function loadData(silent = false) {
+      try {
+        const { data, error } = await supabaseClient
+          .from('leads')
+          .select('*')
+          .order('id', { ascending: false });
 
-  if (raw.includes(',')) {
-    return Number(raw.replace(',', '.')) || 0;
-  }
+        if (error) throw new Error(error.message);
 
-  return Number(raw) || 0;
-}
+        leadsData = (data || []).map(normalizeLead);
+        el('syncDot').classList.remove('off');
+        el('syncStatus').textContent = 'Supabase conectado e sincronizado';
+        el('syncInfo').textContent = `${leadsData.length} leads carregados | atualização automática a cada 10s`;
+        refreshFilters();
+        applyFilters();
+        if (!silent) toast('Dados atualizados do Supabase.');
+      } catch (err) {
+        el('syncDot').classList.add('off');
+        el('syncStatus').textContent = 'Erro ao conectar no Supabase';
+        el('syncInfo').textContent = err.message;
+        toast(err.message);
+      }
+    }
 
-function matchStatus(s) {
-  const n = normalize(s).replace(/\s+/g, '-');
+    function refreshFilters() {
+      fillSelect('sourceFilter', 'Todas as fontes', [...new Set(leadsData.map(lead => lead.fonte).filter(Boolean))].sort());
+      fillSelect('statusFilter', 'Todos os status', STATUS_ORDER.filter(status => leadsData.some(lead => lead.status === status)));
+      fillSelect('priorityFilter', 'Todas as prioridades', PRIORITY_ORDER.filter(priority => leadsData.some(lead => lead.prioridade === priority)));
+      fillSelect('segmentFilter', 'Todos os segmentos', [...new Set(leadsData.map(lead => lead.segmento).filter(Boolean))].sort());
+    }
 
-  if (n.includes('venda') || n === 'fechado') return 'Fechado-Venda';
-  if (n.includes('perda') || n.includes('perdido')) return 'Fechado-Perda';
-  if (n.includes('visual')) return 'Visualizado';
-  if (n.includes('trat')) return 'Tratado';
-  if (n.includes('retorno') || n.includes('follow')) return 'Retorno';
+    function fillSelect(id, label, options) {
+      const select = el(id);
+      const selected = select.value;
+      select.innerHTML = `<option value="">${label}</option>` + options.map(option => `<option value="${escapeHTML(option)}">${escapeHTML(option)}</option>`).join('');
+      select.value = options.includes(selected) ? selected : '';
+    }
 
-  return 'Captado';
-}
+    function applyFilters() {
+      const q = normalize(el('searchInput').value);
+      const source = el('sourceFilter').value;
+      const status = el('statusFilter').value;
+      const priority = el('priorityFilter').value;
+      const segment = el('segmentFilter').value;
+      const period = Number(el('periodFilter').value || 0);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-async function loadData(silent = false) {
-  try {
-    const { data, error } = await supabaseClient
-      .from('leads')
-      .select('*')
-      .order('id', { ascending: false });
+      filteredData = leadsData.filter(lead => {
+        const text = [
+          lead.id, lead.nome, lead.empresa, lead.fonte, lead.segmento, lead.prioridade, lead.status,
+          lead.valor, lead.data, lead.proxima_acao, lead.numero, lead.email, lead.link, lead.observacao
+        ].join(' ');
+        const matchesText = !q || normalize(text).includes(q);
+        const matchesSource = !source || lead.fonte === source;
+        const matchesStatus = !status || lead.status === status;
+        const matchesPriority = !priority || lead.prioridade === priority;
+        const matchesSegment = !segment || lead.segmento === segment;
+        let matchesPeriod = true;
 
-    if (error) throw new Error(error.message);
+        if (period) {
+          const date = parseDateBR(lead.data);
+          matchesPeriod = date ? ((today - date) / 86400000 <= period) : false;
+        }
 
-    leadsData = (data || []).map(r => ({
-      id: r.id || '',
-      lead: r.lead || '',
-      nome: r.nome || r.lead || r.empresa || 'Sem nome',
-      fonte: r.fonte || 'Não informado',
-      status: matchStatus(r.status || 'Captado'),
-      valor: parseCurrency(r.valor),
-      data: r.data || '',
-      link: r.link || '',
-      email: r.email || '',
-      perfil: r.perfil || '',
-      numero: r.numero || r.telefone || '',
-      telefone: r.telefone || r.numero || '',
-      empresa: r.empresa || '',
-      observacao: r.observacao || '',
-      _raw: r
-    }));
+        return matchesText && matchesSource && matchesStatus && matchesPriority && matchesSegment && matchesPeriod;
+      }).sort((a, b) => (parseDateBR(b.data) || 0) - (parseDateBR(a.data) || 0));
 
-    el('syncDot').classList.remove('off');
-    el('syncStatus').textContent = 'Supabase conectado e sincronizado';
-    el('syncInfo').textContent = `${leadsData.length} leads • atualiza a cada 10s`;
+      renderAll();
+    }
 
-    refreshFilters();
-    applyFilters();
+    function renderAll() {
+      renderKPIs();
+      renderAlert();
+      renderPipeline();
+      renderTable();
+      renderCharts();
+    }
 
-    if (!silent) toast('Dados atualizados do Supabase');
-  } catch (err) {
-    el('syncDot').classList.add('off');
-    el('syncStatus').textContent = 'Erro ao conectar no Supabase';
-    el('syncInfo').textContent = err.message;
-  }
-}
+    function renderKPIs() {
+      const total = filteredData.length;
+      const sales = filteredData.filter(lead => lead.status === 'Fechado-Venda').length;
+      const hot = filteredData.filter(lead => lead.prioridade === 'Quente').length;
+      const potential = filteredData.reduce((acc, lead) => acc + Number(lead.valor || 0), 0);
+      const conversion = total ? (sales / total * 100) : 0;
+      const treated = filteredData.filter(lead => ['Tratado', 'Retorno', 'Fechado-Venda', 'Fechado-Perda'].includes(lead.status)).length;
+      const avgScore = filteredData.reduce((acc, lead) => acc + Number(lead.score || 0), 0) / Math.max(total, 1);
 
-function refreshFilters() {
-  const sourceSelected = el('sourceFilter').value;
-  const statusSelected = el('statusFilter').value;
+      el('kpiTotal').textContent = total;
+      el('kpiConversion').textContent = conversion.toFixed(1).replace('.', ',') + '%';
+      el('kpiPotential').textContent = fmtCurrency(potential);
+      el('kpiHot').textContent = hot;
+      el('kpiTotalHelp').textContent = `${treated} leads tratados`;
+      el('kpiConversionHelp').textContent = `${sales} vendas fechadas`;
+      el('kpiPotentialHelp').textContent = `${fmtCurrency(potential / Math.max(total, 1))} por lead`;
+      el('kpiHotHelp').textContent = `Score médio ${avgScore.toFixed(0)}/100`;
+    }
 
-  const sources = [...new Set(leadsData.map(l => l.fonte).filter(Boolean))].sort();
+    function renderAlert() {
+      const delayed = filteredData.filter(lead => ['Captado', 'Visualizado', 'Retorno'].includes(lead.status) && Number(daysSince(lead.data)) >= 3);
+      const highValueOpen = filteredData.filter(lead => ['Captado', 'Visualizado', 'Retorno', 'Tratado'].includes(lead.status) && Number(lead.valor || 0) >= 10000);
+      const box = el('alertBox');
 
-  el('sourceFilter').innerHTML =
-    '<option value="">Todas as fontes</option>' +
-    sources.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+      if (delayed.length || highValueOpen.length) {
+        box.classList.add('show');
+        el('alertText').innerHTML = `<strong>${delayed.length} leads</strong> sem avanço há 3 dias ou mais. <strong>${highValueOpen.length} oportunidades</strong> abertas acima de R$ 10 mil.`;
+      } else {
+        box.classList.remove('show');
+      }
+    }
 
-  el('sourceFilter').value = sources.includes(sourceSelected) ? sourceSelected : '';
+    function renderPipeline() {
+      const total = filteredData.length || 1;
+      el('pipelineMini').textContent = `${filteredData.length} leads filtrados`;
+      el('pipeline').innerHTML = STATUS_ORDER.map(status => {
+        const count = filteredData.filter(lead => lead.status === status).length;
+        const pct = (count / total) * 100;
+        return `<div class="pipe-row"><strong title="${status}">${status}</strong><div class="bar"><span style="width:${pct}%"></span></div><span>${count}</span></div>`;
+      }).join('');
+    }
 
-  const statuses = STATUS_ORDER.filter(s => leadsData.some(l => l.status === s));
+    function renderTable() {
+      const tbody = el('leadsTbody');
+      el('tableMini').textContent = `${filteredData.length} registros exibidos`;
+      el('emptyState').style.display = filteredData.length ? 'none' : 'block';
 
-  el('statusFilter').innerHTML =
-    '<option value="">Todos os status</option>' +
-    statuses.map(s => `<option value="${s}">${s}</option>`).join('');
+      tbody.innerHTML = filteredData.slice(0, 180).map(lead => {
+        const dias = daysSince(lead.data);
+        return `<tr>
+          <td>#${escapeHTML(lead.id)}</td>
+          <td><input class="table-input name-input" data-id="${escapeHTML(lead.id)}" data-field="nome" value="${escapeHTML(lead.nome)}"></td>
+          <td><input class="table-input" data-id="${escapeHTML(lead.id)}" data-field="fonte" value="${escapeHTML(lead.fonte)}"></td>
+          <td><input class="table-input" data-id="${escapeHTML(lead.id)}" data-field="segmento" value="${escapeHTML(lead.segmento)}"></td>
+          <td>
+            <select class="table-input" data-id="${escapeHTML(lead.id)}" data-field="prioridade">
+              ${PRIORITY_ORDER.map(priority => `<option value="${priority}" ${lead.prioridade === priority ? 'selected' : ''}>${priority}</option>`).join('')}
+            </select>
+          </td>
+          <td><input class="table-input" data-id="${escapeHTML(lead.id)}" data-field="score" value="${Number(lead.score || 0)}"></td>
+          <td>
+            <select class="table-input" data-id="${escapeHTML(lead.id)}" data-field="status">
+              ${STATUS_ORDER.map(status => `<option value="${status}" ${lead.status === status ? 'selected' : ''}>${status}</option>`).join('')}
+            </select>
+          </td>
+          <td><input class="table-input" data-id="${escapeHTML(lead.id)}" data-field="valor" value="${Number(lead.valor || 0)}"></td>
+          <td><input class="table-input" data-id="${escapeHTML(lead.id)}" data-field="data" value="${escapeHTML(formatDateForInput(lead.data))}" placeholder="dd/mm/aaaa"></td>
+          <td><input class="table-input" data-id="${escapeHTML(lead.id)}" data-field="numero" value="${escapeHTML(lead.numero)}"></td>
+          <td><input class="table-input" data-id="${escapeHTML(lead.id)}" data-field="email" value="${escapeHTML(lead.email)}"></td>
+          <td><input class="table-input link-input" data-id="${escapeHTML(lead.id)}" data-field="link" value="${escapeHTML(lead.link)}"></td>
+          <td><input class="table-input action-input" data-id="${escapeHTML(lead.id)}" data-field="proxima_acao" value="${escapeHTML(lead.proxima_acao)}"></td>
+          <td>${dias === '' ? '-' : dias + ' dia' + (dias == 1 ? '' : 's')}</td>
+          <td>
+            <button class="btn primary save-row" data-id="${escapeHTML(lead.id)}">Salvar</button>
+            <button class="btn danger del-row" data-id="${escapeHTML(lead.id)}">Excluir</button>
+          </td>
+        </tr>`;
+      }).join('');
+    }
 
-  el('statusFilter').value = statuses.includes(statusSelected) ? statusSelected : '';
-}
+    function formatDateForInput(value) {
+      const date = parseDateBR(value);
+      if (!date) return value || '';
+      return date.toLocaleDateString('pt-BR');
+    }
 
-function applyFilters() {
-  const q = normalize(el('searchInput').value);
-  const source = el('sourceFilter').value;
-  const status = el('statusFilter').value;
-  const period = Number(el('periodFilter').value || 0);
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  filteredData = leadsData
-    .filter(l => {
-      const text =
-        !q ||
-        [
-          l.id,
-          l.nome,
-          l.fonte,
-          l.status,
-          l.valor,
-          l.data,
-          l.numero,
-          l.telefone,
-          l.email,
-          l.link,
-          l.perfil,
-          l.empresa,
-          l.observacao
-        ].some(v => normalize(v).includes(q));
-
-      const src = !source || l.fonte === source;
-      const st = !status || l.status === status;
-
-      let per = true;
-
-      if (period) {
-        const d = parseDateBR(l.data);
-        per = d ? (today - d) / 86400000 <= period : false;
+    function renderCharts() {
+      if (!window.Plotly) {
+        ['chartMonthly', 'chartSources', 'chartStatus', 'chartConversionSource'].forEach(id => {
+          el(id).innerHTML = '<div class="fallback-chart">Gráfico indisponível sem conexão com a biblioteca Plotly.</div>';
+        });
+        return;
       }
 
-      return text && src && st && per;
-    })
-    .sort((a, b) => (parseDateBR(b.data) || 0) - (parseDateBR(a.data) || 0));
+      const baseLayout = {
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        font: { color: '#172033', family: 'Inter, Segoe UI, Arial', size: 12 },
+        margin: { t: 12, b: 38, l: 46, r: 14 },
+        xaxis: { gridcolor: '#e5e7eb', zerolinecolor: '#e5e7eb' },
+        yaxis: { gridcolor: '#e5e7eb', zerolinecolor: '#e5e7eb' }
+      };
+      const config = { responsive: true, displayModeBar: false };
 
-  renderAll();
-}
+      const monthly = {};
+      filteredData.forEach(lead => {
+        const date = parseDateBR(lead.data);
+        const key = date ? `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}` : 'Sem data';
+        monthly[key] = (monthly[key] || 0) + 1;
+      });
+      const monthlyKeys = Object.keys(monthly).sort((a, b) => {
+        if (a === 'Sem data') return 1;
+        if (b === 'Sem data') return -1;
+        const [ma, ya] = a.split('/').map(Number);
+        const [mb, yb] = b.split('/').map(Number);
+        return new Date(ya, ma - 1) - new Date(yb, mb - 1);
+      });
 
-function renderAll() {
-  renderKPIs();
-  renderPipeline();
-  renderTable();
-  renderCharts();
-}
+      Plotly.newPlot('chartMonthly', [{
+        x: monthlyKeys,
+        y: monthlyKeys.map(key => monthly[key]),
+        type: 'bar',
+        marker: { color: '#176b87' },
+        hovertemplate: '%{x}<br>%{y} leads<extra></extra>'
+      }], baseLayout, config);
 
-function renderKPIs() {
-  const total = filteredData.length;
-  const sales = filteredData.filter(l => l.status === 'Fechado-Venda').length;
-  const pending = filteredData.filter(l =>
-    ['Captado', 'Visualizado', 'Retorno'].includes(l.status)
-  ).length;
+      const sourceRows = Object.entries(countBy(filteredData, 'fonte')).sort((a, b) => b[1] - a[1]).slice(0, 7);
+      Plotly.newPlot('chartSources', [{
+        x: sourceRows.map(row => row[1]),
+        y: sourceRows.map(row => row[0]),
+        type: 'bar',
+        orientation: 'h',
+        marker: { color: '#12395a' },
+        hovertemplate: '%{y}<br>%{x} leads<extra></extra>'
+      }], { ...baseLayout, margin: { t: 8, b: 30, l: 120, r: 14 } }, config);
 
-  const potential = filteredData.reduce((a, l) => a + Number(l.valor || 0), 0);
-  const conv = total ? (sales / total) * 100 : 0;
+      const statusCounts = STATUS_ORDER.map(status => filteredData.filter(lead => lead.status === status).length);
+      Plotly.newPlot('chartStatus', [{
+        labels: STATUS_ORDER,
+        values: statusCounts,
+        type: 'pie',
+        hole: .58,
+        marker: { colors: ['#f59e0b', '#1d4ed8', '#176b87', '#6d28d9', '#15803d', '#b91c1c'] },
+        textinfo: 'label+percent',
+        hovertemplate: '%{label}<br>%{value} leads<extra></extra>'
+      }], { ...baseLayout, showlegend: false, margin: { t: 8, b: 8, l: 8, r: 8 } }, config);
 
-  const treated = filteredData.filter(l =>
-    ['Tratado', 'Retorno', 'Fechado-Venda', 'Fechado-Perda'].includes(l.status)
-  ).length;
-
-  el('kpiTotal').textContent = total;
-  el('kpiConversion').textContent = conv.toFixed(1).replace('.', ',') + '%';
-  el('kpiPotential').textContent = money(potential);
-  el('kpiPending').textContent = pending;
-
-  el('kpiTotalHelp').textContent = `${treated} leads com tratamento`;
-  el('kpiConversionHelp').textContent = `${sales} vendas fechadas`;
-  el('kpiPotentialHelp').textContent = `${money(potential / Math.max(total, 1))} ticket médio`;
-  el('kpiPendingHelp').textContent = pending ? 'Exigem follow-up' : 'Sem pendência nos filtros';
-}
-
-function renderPipeline() {
-  const total = filteredData.length || 1;
-
-  el('pipelineMini').textContent = `${filteredData.length} leads filtrados`;
-
-  el('pipeline').innerHTML = STATUS_ORDER.map(s => {
-    const c = filteredData.filter(l => l.status === s).length;
-    const p = (c / total) * 100;
-
-    return `
-      <div class="pipe-row">
-        <strong>${s}</strong>
-        <div class="bar"><span style="width:${p}%"></span></div>
-        <span>${c}</span>
-      </div>
-    `;
-  }).join('');
-}
-
-function renderTable() {
-  el('tableMini').textContent = `${filteredData.length} registros exibidos`;
-  el('empty').style.display = filteredData.length ? 'none' : 'block';
-
-  el('tbody').innerHTML = filteredData.slice(0, 150).map(l => `
-    <tr>
-      <td>#${esc(l.id)}</td>
-
-      <td><input class="table-input" data-id="${esc(l.id)}" data-field="nome" value="${esc(l.nome)}"></td>
-      <td><input class="table-input" data-id="${esc(l.id)}" data-field="fonte" value="${esc(l.fonte)}"></td>
-
-      <td>
-        <select class="table-input" data-id="${esc(l.id)}" data-field="status">
-          ${STATUS_ORDER.map(s => `<option value="${s}" ${l.status === s ? 'selected' : ''}>${s}</option>`).join('')}
-        </select>
-      </td>
-
-      <td><input class="table-input" data-id="${esc(l.id)}" data-field="valor" value="${esc(l.valor)}"></td>
-      <td><input class="table-input" data-id="${esc(l.id)}" data-field="data" value="${esc(l.data)}"></td>
-      <td><input class="table-input" data-id="${esc(l.id)}" data-field="numero" value="${esc(l.numero || l.telefone)}"></td>
-      <td><input class="table-input" data-id="${esc(l.id)}" data-field="email" value="${esc(l.email)}"></td>
-      <td><input class="table-input" data-id="${esc(l.id)}" data-field="link" value="${esc(l.link || l.perfil)}"></td>
-
-      <td>
-        <button class="btn primary save-row" data-id="${esc(l.id)}">Salvar</button>
-        <button class="btn danger del-row" data-id="${esc(l.id)}">Excluir</button>
-      </td>
-    </tr>
-  `).join('');
-}
-
-function renderCharts() {
-  const layout = {
-    paper_bgcolor: 'rgba(0,0,0,0)',
-    plot_bgcolor: 'rgba(0,0,0,0)',
-    font: { color: '#172033', family: 'Inter,Segoe UI,Arial' },
-    margin: { t: 12, b: 38, l: 46, r: 18 },
-    xaxis: { gridcolor: '#e2e8f0' },
-    yaxis: { gridcolor: '#e2e8f0' }
-  };
-
-  const cfg = { responsive: true, displayModeBar: false };
-
-  const monthly = {};
-
-  filteredData.forEach(l => {
-    const d = parseDateBR(l.data);
-    const k = d ? `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}` : 'Sem data';
-    monthly[k] = (monthly[k] || 0) + 1;
-  });
-
-  const mk = Object.keys(monthly).sort((a, b) => {
-    if (a === 'Sem data') return 1;
-    if (b === 'Sem data') return -1;
-
-    const [ma, ya] = a.split('/').map(Number);
-    const [mb, yb] = b.split('/').map(Number);
-
-    return new Date(ya, ma - 1) - new Date(yb, mb - 1);
-  });
-
-  Plotly.newPlot('chartMonthly', [{ x: mk, y: mk.map(k => monthly[k]), type: 'bar' }], layout, cfg);
-
-  const src = Object.entries(countBy(filteredData, 'fonte'))
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 7);
-
-  Plotly.newPlot(
-    'chartSources',
-    [{ x: src.map(r => r[1]), y: src.map(r => r[0]), type: 'bar', orientation: 'h' }],
-    { ...layout, margin: { t: 8, b: 30, l: 115, r: 18 } },
-    cfg
-  );
-
-  const sc = STATUS_ORDER.map(s => filteredData.filter(l => l.status === s).length);
-
-  Plotly.newPlot(
-    'chartStatus',
-    [{ labels: STATUS_ORDER, values: sc, type: 'pie', hole: 0.52, textinfo: 'label+percent' }],
-    { ...layout, showlegend: false, margin: { t: 8, b: 8, l: 8, r: 8 } },
-    cfg
-  );
-
-  const totals = {};
-  const sales = {};
-
-  filteredData.forEach(l => {
-    totals[l.fonte] = (totals[l.fonte] || 0) + 1;
-    if (l.status === 'Fechado-Venda') sales[l.fonte] = (sales[l.fonte] || 0) + 1;
-  });
-
-  const conv = Object.keys(totals)
-    .map(f => [f, ((sales[f] || 0) / totals[f]) * 100])
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 7);
-
-  Plotly.newPlot(
-    'chartConversionSource',
-    [{ x: conv.map(r => r[0]), y: conv.map(r => Number(r[1].toFixed(1))), type: 'bar' }],
-    { ...layout, yaxis: { ...layout.yaxis, ticksuffix: '%' } },
-    cfg
-  );
-}
-
-function countBy(data, key) {
-  return data.reduce((a, i) => {
-    a[i[key] || 'Não informado'] = (a[i[key] || 'Não informado'] || 0) + 1;
-    return a;
-  }, {});
-}
-
-function esc(v) {
-  return String(v ?? '').replace(/[&<>'"]/g, ch => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    "'": '&#039;',
-    '"': '&quot;'
-  }[ch]));
-}
-
-async function saveRow(id) {
-  const inputs = [...document.querySelectorAll(`[data-id="${CSS.escape(String(id))}"][data-field]`)];
-  const updates = {};
-
-  inputs.forEach(i => {
-    updates[i.dataset.field] = i.value;
-  });
-
-  updates.status = matchStatus(updates.status);
-  updates.valor = parseCurrency(updates.valor);
-  updates.updated_at = new Date().toISOString();
-
-  if (updates.numero) updates.telefone = updates.numero;
-
-  const { error } = await supabaseClient
-    .from('leads')
-    .update(updates)
-    .eq('id', id);
-
-  if (error) throw new Error(error.message);
-
-  toast('Lead salvo no Supabase');
-  await loadData(true);
-}
-
-async function addLead() {
-  const nome = prompt('Nome do lead/empresa:');
-  if (!nome) return;
-
-  const fonte = prompt('Fonte:', 'Manual') || 'Manual';
-  const dataHoje = new Date().toLocaleDateString('pt-BR');
-
-  const row = {
-    nome,
-    lead: nome,
-    empresa: nome,
-    fonte,
-    status: 'Captado',
-    valor: 0,
-    data: dataHoje,
-    link: '',
-    email: '',
-    perfil: '',
-    numero: '',
-    telefone: '',
-    observacao: ''
-  };
-
-  const { error } = await supabaseClient
-    .from('leads')
-    .insert([row]);
-
-  if (error) throw new Error(error.message);
-
-  toast('Novo lead criado no Supabase');
-  await loadData(true);
-}
-
-async function deleteLead(id) {
-  if (!confirm('Excluir este lead do Supabase?')) return;
-
-  const { error } = await supabaseClient
-    .from('leads')
-    .delete()
-    .eq('id', id);
-
-  if (error) throw new Error(error.message);
-
-  toast('Lead excluído do Supabase');
-  await loadData(true);
-}
-
-['searchInput', 'sourceFilter', 'statusFilter', 'periodFilter'].forEach(id => {
-  el(id).addEventListener('input', applyFilters);
-});
-
-el('btnRefresh').onclick = () => loadData(false);
-
-el('btnReset').onclick = () => {
-  el('searchInput').value = '';
-  el('sourceFilter').value = '';
-  el('statusFilter').value = '';
-  el('periodFilter').value = '';
-  applyFilters();
-};
-
-el('btnAdd').onclick = () => {
-  addLead().catch(e => toast(e.message));
-};
-
-el('tbody').addEventListener('click', e => {
-  if (e.target.classList.contains('save-row')) {
-    saveRow(e.target.dataset.id).catch(err => toast(err.message));
-  }
-
-  if (e.target.classList.contains('del-row')) {
-    deleteLead(e.target.dataset.id).catch(err => toast(err.message));
-  }
-});
-
-loadData(true);
-
-const realtimeChannel = supabaseClient
-  .channel('leads-live')
-  .on(
-    'postgres_changes',
-    { event: '*', schema: 'public', table: 'leads' },
-    () => {
-      loadData(true);
-    }
-  )
-  .subscribe(status => {
-    if (status === 'SUBSCRIBED') {
-      el('syncStatus').textContent = 'Supabase conectado ao vivo';
-      el('syncInfo').textContent = `${leadsData.length} leads • Realtime ativo + atualização a cada 10s`;
+      const sourceTotals = {};
+      const sourceSales = {};
+      filteredData.forEach(lead => {
+        sourceTotals[lead.fonte] = (sourceTotals[lead.fonte] || 0) + 1;
+        if (lead.status === 'Fechado-Venda') sourceSales[lead.fonte] = (sourceSales[lead.fonte] || 0) + 1;
+      });
+      const convRows = Object.keys(sourceTotals).map(source => [source, (sourceSales[source] || 0) / sourceTotals[source] * 100]).sort((a, b) => b[1] - a[1]).slice(0, 7);
+      Plotly.newPlot('chartConversionSource', [{
+        x: convRows.map(row => row[0]),
+        y: convRows.map(row => Number(row[1].toFixed(1))),
+        type: 'bar',
+        marker: { color: '#15803d' },
+        hovertemplate: '%{x}<br>%{y}%<extra></extra>'
+      }], { ...baseLayout, yaxis: { ...baseLayout.yaxis, ticksuffix: '%' } }, config);
     }
 
-    if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-      el('syncInfo').textContent = `${leadsData.length} leads • Realtime indisponível, usando atualização a cada 10s`;
+    function countBy(data, key) {
+      return data.reduce((acc, item) => {
+        const label = item[key] || 'Não informado';
+        acc[label] = (acc[label] || 0) + 1;
+        return acc;
+      }, {});
     }
-  });
 
-setInterval(() => {
-  loadData(true);
-}, 10000);
-</script>
-</body>
-</html>
-</script>
+    async function saveRow(id) {
+      const inputs = [...document.querySelectorAll(`[data-id="${CSS.escape(String(id))}"][data-field]`)];
+      const updates = {};
+
+      inputs.forEach(input => {
+        updates[input.dataset.field] = input.value;
+      });
+
+      updates.lead = updates.nome;
+      updates.empresa = updates.nome;
+      updates.status = matchStatus(updates.status);
+      updates.prioridade = matchPriority(updates.prioridade, updates.score);
+      updates.score = Number(updates.score || 0);
+      updates.valor = parseCurrencyBR(updates.valor);
+      updates.telefone = updates.numero || '';
+      updates.updated_at = new Date().toISOString();
+
+      const { error } = await supabaseClient
+        .from('leads')
+        .update(updates)
+        .eq('id', id);
+
+      if (error) throw new Error(error.message);
+      toast('Lead salvo no Supabase.');
+      await loadData(true);
+    }
+
+    async function addLead() {
+      const nome = prompt('Nome do lead/empresa:');
+      if (!nome) return;
+      const fonte = prompt('Fonte:', 'Manual') || 'Manual';
+      const hoje = new Date().toLocaleDateString('pt-BR');
+      const row = {
+        lead: nome,
+        nome,
+        empresa: nome,
+        fonte,
+        segmento: 'Não classificado',
+        prioridade: 'Morno',
+        score: 50,
+        proxima_acao: 'Revisar e qualificar',
+        status: 'Captado',
+        valor: 0,
+        data: hoje,
+        link: '',
+        email: '',
+        perfil: '',
+        numero: '',
+        telefone: '',
+        observacao: ''
+      };
+
+      const { error } = await supabaseClient
+        .from('leads')
+        .insert([row]);
+
+      if (error) throw new Error(error.message);
+      toast('Novo lead criado no Supabase.');
+      await loadData(true);
+    }
+
+    async function deleteLead(id) {
+      if (!confirm('Excluir este lead do Supabase?')) return;
+      const { error } = await supabaseClient
+        .from('leads')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw new Error(error.message);
+      toast('Lead excluído do Supabase.');
+      await loadData(true);
+    }
+
+    function exportCSV() {
+      const rows = [
+        ['ID', 'Nome', 'Fonte', 'Segmento', 'Prioridade', 'Score', 'Status', 'Valor', 'Data', 'Numero', 'Email', 'Link', 'Proxima acao'],
+        ...filteredData.map(lead => [lead.id, lead.nome, lead.fonte, lead.segmento, lead.prioridade, lead.score, lead.status, String(lead.valor).replace('.', ','), lead.data, lead.numero, lead.email, lead.link, lead.proxima_acao])
+      ];
+      const csv = rows.map(row => row.map(value => `"${String(value ?? '').replace(/"/g, '""')}"`).join(';')).join('\n');
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = 'leads_construtec_supabase.csv';
+      anchor.click();
+      URL.revokeObjectURL(url);
+    }
+
+    ['searchInput', 'sourceFilter', 'statusFilter', 'priorityFilter', 'segmentFilter', 'periodFilter'].forEach(id => {
+      el(id).addEventListener('input', applyFilters);
+    });
+
+    el('btnRefresh').addEventListener('click', () => loadData(false));
+    el('btnExport').addEventListener('click', exportCSV);
+    el('btnAdd').addEventListener('click', () => addLead().catch(err => toast(err.message)));
+    el('btnResetFilters').addEventListener('click', () => {
+      ['searchInput', 'sourceFilter', 'statusFilter', 'priorityFilter', 'segmentFilter', 'periodFilter'].forEach(id => {
+        el(id).value = '';
+      });
+      applyFilters();
+    });
+
+    el('leadsTbody').addEventListener('click', event => {
+      if (event.target.classList.contains('save-row')) {
+        saveRow(event.target.dataset.id).catch(err => toast(err.message));
+      }
+      if (event.target.classList.contains('del-row')) {
+        deleteLead(event.target.dataset.id).catch(err => toast(err.message));
+      }
+    });
+
+    loadData(true);
+
+    const realtimeChannel = supabaseClient
+      .channel('leads-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => loadData(true))
+      .subscribe(status => {
+        if (status === 'SUBSCRIBED') {
+          el('syncStatus').textContent = 'Supabase conectado ao vivo';
+          el('syncInfo').textContent = `${leadsData.length} leads carregados | Realtime ativo + atualização a cada 10s`;
+        }
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          el('syncInfo').textContent = `${leadsData.length} leads carregados | Realtime indisponível, usando atualização a cada 10s`;
+        }
+      });
+
+    setInterval(() => loadData(true), 10000);
+  </script>
 </body>
 </html>
