@@ -666,6 +666,7 @@
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     let leadsData = [];
     let filteredData = [];
+    let totalLeadsCount = 0;
 
     const el = id => document.getElementById(id);
     const normalize = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
@@ -766,17 +767,18 @@
 
     async function loadData(silent = false) {
       try {
-        const { data, error } = await supabaseClient
+        const { data, error, count } = await supabaseClient
           .from('leads')
-          .select('*')
+          .select('*', { count: 'exact' })
           .order('id', { ascending: false });
 
         if (error) throw new Error(error.message);
 
         leadsData = (data || []).map(normalizeLead);
+        totalLeadsCount = Number(count ?? leadsData.length);
         el('syncDot').classList.remove('off');
         el('syncStatus').textContent = 'Supabase conectado e sincronizado';
-        el('syncInfo').textContent = `${leadsData.length} leads carregados | atualização automática a cada 10s`;
+        el('syncInfo').textContent = `${totalLeadsCount} leads no Supabase | ${leadsData.length} carregados | atualização automática a cada 10s`;
         refreshFilters();
         applyFilters();
         if (!silent) toast('Dados atualizados do Supabase.');
@@ -845,6 +847,7 @@
 
     function renderKPIs() {
       const total = filteredData.length;
+      const totalBase = totalLeadsCount || leadsData.length;
       const sales = filteredData.filter(lead => lead.status === 'Fechado-Venda').length;
       const hot = filteredData.filter(lead => lead.prioridade === 'Quente').length;
       const potential = filteredData.reduce((acc, lead) => acc + Number(lead.valor || 0), 0);
@@ -852,11 +855,11 @@
       const treated = filteredData.filter(lead => ['Tratado', 'Retorno', 'Fechado-Venda', 'Fechado-Perda'].includes(lead.status)).length;
       const avgScore = filteredData.reduce((acc, lead) => acc + Number(lead.score || 0), 0) / Math.max(total, 1);
 
-      el('kpiTotal').textContent = total;
+      el('kpiTotal').textContent = totalBase;
       el('kpiConversion').textContent = conversion.toFixed(1).replace('.', ',') + '%';
       el('kpiPotential').textContent = fmtCurrency(potential);
       el('kpiHot').textContent = hot;
-      el('kpiTotalHelp').textContent = `${treated} leads tratados`;
+      el('kpiTotalHelp').textContent = total === totalBase ? `${treated} leads tratados` : `${total} leads filtrados`;
       el('kpiConversionHelp').textContent = `${sales} vendas fechadas`;
       el('kpiPotentialHelp').textContent = `${fmtCurrency(potential / Math.max(total, 1))} por lead`;
       el('kpiHotHelp').textContent = `Score médio ${avgScore.toFixed(0)}/100`;
@@ -1133,10 +1136,10 @@
       .subscribe(status => {
         if (status === 'SUBSCRIBED') {
           el('syncStatus').textContent = 'Supabase conectado ao vivo';
-          el('syncInfo').textContent = `${leadsData.length} leads carregados | Realtime ativo + atualização a cada 10s`;
+          el('syncInfo').textContent = `${totalLeadsCount || leadsData.length} leads no Supabase | Realtime ativo + atualização a cada 10s`;
         }
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          el('syncInfo').textContent = `${leadsData.length} leads carregados | Realtime indisponível, usando atualização a cada 10s`;
+          el('syncInfo').textContent = `${totalLeadsCount || leadsData.length} leads no Supabase | Realtime indisponível, usando atualização a cada 10s`;
         }
       });
 
