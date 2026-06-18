@@ -494,6 +494,57 @@
       overflow: auto;
     }
 
+    .table-pagination {
+      min-height: 48px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      border-top: 1px solid var(--line);
+      background: var(--panel-soft);
+    }
+
+    .page-btn,
+    .page-gap {
+      min-width: 34px;
+      height: 34px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .86rem;
+      font-weight: 850;
+    }
+
+    .page-btn {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .page-btn:hover:not(:disabled) {
+      border-color: var(--brand-2);
+      color: var(--brand);
+    }
+
+    .page-btn.active {
+      border-color: var(--brand);
+      background: var(--brand);
+      color: #fff;
+    }
+
+    .page-btn:disabled {
+      cursor: default;
+      opacity: .5;
+    }
+
+    .page-gap {
+      color: var(--muted);
+    }
+
     table {
       width: 100%;
       min-width: 1360px;
@@ -905,6 +956,7 @@
         </table>
         <div class="empty" id="emptyState">Nenhum lead encontrado com os filtros atuais.</div>
       </div>
+      <div class="table-pagination" id="tablePagination" aria-label="Paginacao dos leads"></div>
     </section>
 
     <footer class="footer">
@@ -924,12 +976,13 @@
     ].join(',');
     const STATUS_ORDER = ['Captado', 'Visualizado', 'Tratado', 'Retorno', 'Fechado-Venda', 'Fechado-Perda'];
     const PRIORITY_ORDER = ['Quente', 'Morno', 'Frio'];
-    const TABLE_LIMIT = 180;
+    const TABLE_PAGE_SIZE = 500;
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     let leadsData = [];
     let filteredData = [];
     let totalLeadsCount = 0;
+    let currentPage = 1;
     const COLUMN_FILTER_FIELDS = ['id', 'nome', 'fonte', 'prioridade', 'status', 'data', 'numero', 'email', 'link'];
 
     const el = id => document.getElementById(id);
@@ -1092,7 +1145,7 @@
         setLastSync();
         try {
           refreshFilters();
-          applyFilters();
+          applyFilters(false);
         } catch (renderErr) {
           console.error('Erro ao renderizar dashboard:', renderErr);
           setText('syncStatus', 'Supabase conectado; erro ao renderizar painel');
@@ -1169,7 +1222,7 @@
       });
     }
 
-    function applyFilters() {
+    function applyFilters(resetPage = true) {
       const q = normalize(el('searchInput').value);
       const source = el('sourceFilter').value;
       const status = el('statusFilter').value;
@@ -1198,6 +1251,7 @@
         return matchesText && matchesSource && matchesStatus && matchesPriority && matchesPeriod && matchesColumnFilters(lead, columnFilters);
       }).sort((a, b) => (parseDateBR(b.data) || 0) - (parseDateBR(a.data) || 0));
 
+      currentPage = resetPage ? 1 : clampTablePage(currentPage);
       renderAll();
     }
 
@@ -1207,6 +1261,7 @@
       renderAlert();
       renderPipeline();
       renderTable();
+      renderPagination();
       renderCharts();
       refreshIcons();
     }
@@ -1259,13 +1314,39 @@
       }).join('');
     }
 
+    function totalTablePages() {
+      return Math.max(1, Math.ceil(filteredData.length / TABLE_PAGE_SIZE));
+    }
+
+    function clampTablePage(page) {
+      const number = Number(page) || 1;
+      return Math.min(Math.max(1, number), totalTablePages());
+    }
+
+    function goToTablePage(page) {
+      currentPage = clampTablePage(page);
+      renderTable();
+      renderPagination();
+      refreshIcons();
+    }
+
     function renderTable() {
       const tbody = el('leadsTbody');
-      const visibleRows = filteredData.slice(0, TABLE_LIMIT);
-      el('tableMini').textContent = filteredData.length > TABLE_LIMIT
-        ? `${visibleRows.length} de ${filteredData.length} registros exibidos`
-        : `${visibleRows.length} registros exibidos`;
-      el('emptyState').style.display = filteredData.length ? 'none' : 'block';
+      if (!tbody) return;
+
+      currentPage = clampTablePage(currentPage);
+      const start = filteredData.length ? (currentPage - 1) * TABLE_PAGE_SIZE : 0;
+      const visibleRows = filteredData.slice(start, start + TABLE_PAGE_SIZE);
+      const end = start + visibleRows.length;
+
+      setText(
+        'tableMini',
+        filteredData.length
+          ? `${start + 1}-${end} de ${filteredData.length} registros | pagina ${currentPage} de ${totalTablePages()}`
+          : '0 registros exibidos'
+      );
+      const emptyState = el('emptyState');
+      if (emptyState) emptyState.style.display = filteredData.length ? 'none' : 'block';
 
       tbody.innerHTML = visibleRows.map(lead => {
         const attention = leadIsDelayed(lead);
@@ -1296,6 +1377,47 @@
           </td>
         </tr>`;
       }).join('');
+    }
+
+    function paginationPages(totalPages, page) {
+      if (totalPages <= 9) {
+        return Array.from({ length: totalPages }, (_item, index) => index + 1);
+      }
+
+      const pages = [1];
+      const start = Math.max(2, page - 2);
+      const end = Math.min(totalPages - 1, page + 2);
+
+      if (start > 2) pages.push('gap-start');
+      for (let number = start; number <= end; number += 1) {
+        pages.push(number);
+      }
+      if (end < totalPages - 1) pages.push('gap-end');
+      pages.push(totalPages);
+      return pages;
+    }
+
+    function renderPagination() {
+      const pagination = el('tablePagination');
+      if (!pagination) return;
+
+      const totalPages = totalTablePages();
+      currentPage = clampTablePage(currentPage);
+
+      if (!filteredData.length) {
+        pagination.innerHTML = '';
+        return;
+      }
+
+      const pages = paginationPages(totalPages, currentPage);
+      pagination.innerHTML = [
+        `<button class="page-btn" type="button" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button>`,
+        ...pages.map(page => {
+          if (String(page).startsWith('gap')) return '<span class="page-gap">...</span>';
+          return `<button class="page-btn ${page === currentPage ? 'active' : ''}" type="button" data-page="${page}" aria-current="${page === currentPage ? 'page' : 'false'}">${page}</button>`;
+        }),
+        `<button class="page-btn" type="button" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>Proxima</button>`,
+      ].join('');
     }
 
     function formatDateForInput(value) {
@@ -1518,6 +1640,12 @@
       if (button.classList.contains('del-row')) {
         deleteLead(button.dataset.id).catch(err => toast(err.message));
       }
+    });
+
+    el('tablePagination').addEventListener('click', event => {
+      const button = event.target.closest('button[data-page]');
+      if (!button || button.disabled) return;
+      goToTablePage(button.dataset.page);
     });
 
     refreshIcons();
