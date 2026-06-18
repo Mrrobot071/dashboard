@@ -1,81 +1,1670 @@
-@echo off
-setlocal
-cd /d "%~dp0"
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Online de Leads | Construtec</title>
 
-set "PYTHON_EXE=python"
-set "PYTHON_ARGS="
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
 
-if exist "..\.venv\Scripts\python.exe" set "PYTHON_EXE=..\.venv\Scripts\python.exe"
-if exist ".venv\Scripts\python.exe" set "PYTHON_EXE=.venv\Scripts\python.exe"
+  <style>
+    :root {
+      --bg: #f3f6f8;
+      --panel: #ffffff;
+      --panel-soft: #f8fafc;
+      --ink: #172033;
+      --muted: #64748b;
+      --line: #d8e0ea;
+      --brand: #12395a;
+      --brand-2: #176b87;
+      --aqua: #22a7a8;
+      --green: #15803d;
+      --amber: #b45309;
+      --red: #b91c1c;
+      --purple: #6d28d9;
+      --shadow: 0 14px 34px rgba(18, 57, 90, .09);
+      --shadow-soft: 0 7px 18px rgba(18, 57, 90, .06);
+      --radius: 8px;
+    }
 
-call :HAS_PLAYWRIGHT "%PYTHON_EXE%" %PYTHON_ARGS%
-if errorlevel 1 (
-  py -3.13 -c "import importlib.util,sys; sys.exit(0 if importlib.util.find_spec('playwright') else 1)" >nul 2>nul
-  if not errorlevel 1 (
-    set "PYTHON_EXE=py"
-    set "PYTHON_ARGS=-3.13"
-  )
-)
+    * {
+      box-sizing: border-box;
+    }
 
-call :HAS_PLAYWRIGHT "%PYTHON_EXE%" %PYTHON_ARGS%
-if errorlevel 1 (
-  echo.
-  echo Playwright nao foi encontrado no Python disponivel.
-  echo Instale com:
-  echo py -3.13 -m pip install playwright
-  echo py -3.13 -m playwright install chromium
-  echo.
-  exit /b 1
-)
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+      color: var(--ink);
+      background: linear-gradient(180deg, #f8fafc 0%, #eef4f7 48%, #f7fafc 100%);
+    }
 
-echo.
-echo ============================================================
-echo  ATUALIZACAO AUTOMATICA DE LEADS
-echo ============================================================
-echo  - Busca novos leads no Google Maps
-echo  - Confere duplicidade contra CSV, Supabase e pendencias
-echo  - Tenta pegar pelo menos 10 novos por consulta
-echo  - Salva cada lead novo direto no CSV principal
-echo  - Insere cada lead novo direto no Supabase pela API
-echo ============================================================
-echo.
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
 
-"%PYTHON_EXE%" %PYTHON_ARGS% "%~dp0coletar_google_maps_leads.py" ^
-  --modo navegador ^
-  --perfil rapido ^
-  --no-usar-termos-csv ^
-  --max-segundos 0 ^
-  --parar-sem-novos 0 ^
-  --parar-apos-erros 3 ^
-  --max-resultados-consulta 80 ^
-  --max-scrolls 18 ^
-  --limite-total 0 ^
-  --min-novos-por-consulta 10 ^
-  --timeout 30 ^
-  --atualizar-direto ^
-  --processar-pendencias-direto ^
-  %*
+    button:disabled {
+      cursor: wait;
+      opacity: .66;
+    }
 
-set "EXIT_CODE=%ERRORLEVEL%"
-echo %* | findstr /I /C:"--dry-run" >nul
-if errorlevel 1 (
-  set "DRY_RUN=0"
-) else (
-  set "DRY_RUN=1"
-)
-echo.
-if "%EXIT_CODE%"=="0" (
-  if "%DRY_RUN%"=="1" (
-    echo Simulacao concluida. Nada foi gravado nem sincronizado.
-  ) else (
-    echo Concluido. Leads novos foram gravados direto no CSV principal e enviados ao Supabase.
-  )
-) else (
-  echo Falhou com codigo %EXIT_CODE%. Veja os logs na pasta logs.
-)
-echo.
-exit /b %EXIT_CODE%
+    svg {
+      flex: 0 0 auto;
+    }
 
-:HAS_PLAYWRIGHT
-"%~1" %2 -c "import importlib.util,sys; sys.exit(0 if importlib.util.find_spec('playwright') else 1)" >nul 2>nul
-exit /b %ERRORLEVEL%
+    .icon {
+      width: 16px;
+      height: 16px;
+      stroke-width: 2.35;
+    }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+      pointer-events: none;
+    }
+
+    .page {
+      width: min(1500px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 22px 0 34px;
+    }
+
+    .topbar,
+    .sync-strip,
+    .table-top,
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .topbar {
+      padding-bottom: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .mark {
+      width: 46px;
+      height: 46px;
+      border-radius: var(--radius);
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      color: #fff;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      box-shadow: var(--shadow);
+    }
+
+    h1,
+    h2 {
+      margin: 0;
+      line-height: 1.15;
+    }
+
+    h1 {
+      font-size: clamp(1.45rem, 2.4vw, 2.35rem);
+      font-weight: 900;
+    }
+
+    h2 {
+      font-size: 1rem;
+      font-weight: 850;
+    }
+
+    .subtitle,
+    .mini,
+    .footer,
+    .kpi-help {
+      color: var(--muted);
+    }
+
+    .subtitle {
+      margin-top: 4px;
+      font-size: .95rem;
+    }
+
+    .actions,
+    .table-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      background: var(--panel);
+      color: var(--ink);
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+    }
+
+    .btn:hover:not(:disabled) {
+      border-color: #b8c4d2;
+      box-shadow: 0 10px 22px rgba(18, 57, 90, .11);
+      transform: translateY(-1px);
+    }
+
+    .btn.primary {
+      background: var(--brand);
+      border-color: var(--brand);
+      color: #fff;
+    }
+
+    .btn.danger {
+      color: var(--red);
+    }
+
+    .btn.subtle {
+      background: var(--panel-soft);
+    }
+
+    .sync-strip {
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      border: 1px solid rgba(23, 107, 135, .22);
+      border-radius: var(--radius);
+      color: #fff;
+      background: linear-gradient(135deg, var(--brand), #0d5d72);
+      box-shadow: var(--shadow);
+    }
+
+    .sync-side {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 9px;
+      flex-wrap: wrap;
+    }
+
+    .sync-main {
+      font-weight: 900;
+    }
+
+    .sync-note {
+      color: rgba(255, 255, 255, .78);
+      font-size: .9rem;
+      margin-top: 3px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      display: inline-block;
+      margin-right: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 0 5px rgba(34, 197, 94, .18);
+    }
+
+    .dot.off {
+      background: #ef4444;
+      box-shadow: 0 0 0 5px rgba(239, 68, 68, .2);
+    }
+
+    .sync-pill {
+      min-height: 30px;
+      border: 1px solid rgba(255, 255, 255, .2);
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      color: rgba(255, 255, 255, .88);
+      background: rgba(255, 255, 255, .1);
+      font-size: .82rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: minmax(320px, 1.7fr) repeat(4, minmax(165px, .75fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .toolbar .visually-hidden {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .control {
+      width: 100%;
+      min-height: 41px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      color: var(--ink);
+      padding: 8px 10px;
+      outline: none;
+    }
+
+    .control:focus,
+    .table-input:focus,
+    .btn:focus-visible {
+      border-color: var(--brand-2);
+      box-shadow: 0 0 0 3px rgba(23, 107, 135, .13);
+    }
+
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .summary-item {
+      min-height: 66px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, .84);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .summary-label {
+      display: block;
+      color: var(--muted);
+      font-size: .76rem;
+      font-weight: 900;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .summary-value {
+      margin-top: 4px;
+      display: block;
+      font-size: 1.28rem;
+      font-weight: 950;
+      line-height: 1;
+    }
+
+    .summary-item .icon {
+      width: 24px;
+      height: 24px;
+      color: var(--brand-2);
+    }
+
+    .summary-item.warning .icon {
+      color: var(--amber);
+    }
+
+    .summary-item.success .icon {
+      color: var(--green);
+    }
+
+    .alert {
+      display: none;
+      border: 1px solid #fed7aa;
+      border-left: 4px solid var(--amber);
+      border-radius: var(--radius);
+      padding: 11px 13px;
+      margin-bottom: 14px;
+      color: #7c2d12;
+      background: #fff7ed;
+      line-height: 1.35;
+    }
+
+    .alert.show {
+      display: block;
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .kpi,
+    .card {
+      background: rgba(255, 255, 255, .96);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .kpi {
+      position: relative;
+      overflow: hidden;
+      padding: 15px;
+      min-height: 118px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .kpi::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 4px;
+      background: var(--brand-2);
+    }
+
+    .kpi.green::before { background: var(--green); }
+    .kpi.purple::before { background: var(--purple); }
+    .kpi.amber::before { background: var(--amber); }
+
+    .kpi-label {
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .kpi-value {
+      margin: 12px 0 7px;
+      font-size: clamp(1.65rem, 2.5vw, 2.35rem);
+      line-height: 1;
+      font-weight: 950;
+    }
+
+    .kpi-help,
+    .mini,
+    .footer {
+      font-size: .88rem;
+      line-height: 1.3;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.18fr) minmax(350px, .82fr);
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .card {
+      min-width: 0;
+      padding: 14px;
+    }
+
+    .chart {
+      width: 100%;
+      min-height: 300px;
+    }
+
+    .chart.small {
+      min-height: 250px;
+    }
+
+    .fallback-chart {
+      min-height: 220px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      background: var(--panel-soft);
+      border: 1px dashed var(--line);
+      border-radius: var(--radius);
+      text-align: center;
+      padding: 18px;
+    }
+
+    .pipeline {
+      display: grid;
+      gap: 9px;
+      margin-bottom: 14px;
+    }
+
+    .pipe-row {
+      display: grid;
+      grid-template-columns: 138px minmax(100px, 1fr) 42px;
+      align-items: center;
+      gap: 10px;
+      font-size: .9rem;
+    }
+
+    .pipe-row strong {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: .88rem;
+    }
+
+    .bar {
+      height: 9px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #e5e7eb;
+    }
+
+    .bar span {
+      display: block;
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--brand-2);
+    }
+
+    .pipe-row:nth-child(2) .bar span { background: #1d4ed8; }
+    .pipe-row:nth-child(3) .bar span { background: var(--aqua); }
+    .pipe-row:nth-child(4) .bar span { background: var(--purple); }
+    .pipe-row:nth-child(5) .bar span { background: var(--green); }
+    .pipe-row:nth-child(6) .bar span { background: var(--red); }
+
+    .table-card {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .table-top {
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .table-wrap {
+      max-height: 580px;
+      overflow: auto;
+    }
+
+    .table-pagination {
+      min-height: 48px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      border-top: 1px solid var(--line);
+      background: var(--panel-soft);
+    }
+
+    .page-btn,
+    .page-gap {
+      min-width: 34px;
+      height: 34px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .86rem;
+      font-weight: 850;
+    }
+
+    .page-btn {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .page-btn:hover:not(:disabled) {
+      border-color: var(--brand-2);
+      color: var(--brand);
+    }
+
+    .page-btn.active {
+      border-color: var(--brand);
+      background: var(--brand);
+      color: #fff;
+    }
+
+    .page-btn:disabled {
+      cursor: default;
+      opacity: .5;
+    }
+
+    .page-gap {
+      color: var(--muted);
+    }
+
+    table {
+      width: 100%;
+      min-width: 1360px;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      color: #344054;
+      background: var(--panel-soft);
+      font-size: .76rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .column-filter-row th {
+      top: 41px;
+      padding-top: 6px;
+      padding-bottom: 8px;
+      background: #fff;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    .column-filter {
+      width: 100%;
+      min-width: 96px;
+      height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 5px 7px;
+      color: var(--ink);
+      background: #fff;
+      outline: none;
+      font-size: .78rem;
+      font-weight: 700;
+    }
+
+    .column-filter:focus {
+      border-color: var(--brand-2);
+      box-shadow: 0 0 0 3px rgba(23, 107, 135, .13);
+    }
+
+    th:first-child,
+    td:first-child {
+      position: sticky;
+      left: 0;
+    }
+
+    th:first-child {
+      z-index: 4;
+      background: var(--panel-soft);
+    }
+
+    td:first-child {
+      z-index: 1;
+      color: var(--muted);
+      font-weight: 850;
+      background: #fff;
+    }
+
+    tbody tr:hover {
+      background: #fbfcfe;
+    }
+
+    tbody tr:hover td:first-child {
+      background: #fbfcfe;
+    }
+
+    tbody tr[data-attention="true"] td:first-child {
+      box-shadow: inset 4px 0 0 var(--amber);
+    }
+
+    .table-input {
+      width: 100%;
+      min-width: 112px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 7px 8px;
+      color: var(--ink);
+      background: #fff;
+      outline: none;
+    }
+
+    .pill-select {
+      min-width: 128px;
+      border-color: transparent;
+      font-weight: 850;
+    }
+
+    .priority-quente,
+    .status-fechado-venda {
+      color: #166534;
+      background: #dcfce7;
+    }
+
+    .priority-morno,
+    .status-captado,
+    .status-retorno {
+      color: #92400e;
+      background: #fef3c7;
+    }
+
+    .priority-frio,
+    .status-visualizado {
+      color: #1e3a8a;
+      background: #dbeafe;
+    }
+
+    .status-tratado {
+      color: #155e75;
+      background: #cffafe;
+    }
+
+    .status-fechado-perda {
+      color: #991b1b;
+      background: #fee2e2;
+    }
+
+    .save-row,
+    .del-row {
+      min-width: 92px;
+    }
+
+    .name-input { min-width: 220px; }
+    .action-input { min-width: 260px; }
+    .link-input { min-width: 220px; }
+
+    .empty {
+      display: none;
+      padding: 26px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 20;
+      display: none;
+      max-width: min(420px, calc(100vw - 36px));
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      color: #fff;
+      background: #101828;
+      box-shadow: var(--shadow);
+      line-height: 1.35;
+    }
+
+    .toast.show {
+      display: block;
+    }
+
+    .footer {
+      margin-top: 12px;
+    }
+
+    .is-loading .sync-strip {
+      opacity: .92;
+    }
+
+    @media (max-width: 1180px) {
+      .toolbar {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .toolbar .search {
+        grid-column: span 3;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        width: min(100% - 20px, 1500px);
+        padding-top: 12px;
+      }
+
+      .topbar,
+      .sync-strip,
+      .table-top {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .actions,
+      .table-actions,
+      .sync-side {
+        justify-content: flex-start;
+      }
+
+      .toolbar,
+      .kpis,
+      .summary-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .toolbar .search {
+        grid-column: auto;
+      }
+
+      .pipe-row {
+        grid-template-columns: 116px minmax(80px, 1fr) 34px;
+      }
+
+      .summary-item {
+        min-height: 58px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark">CT</div>
+        <div>
+          <h1>Dashboard Online de Leads</h1>
+          <div class="subtitle">Construtec Engenharia | Supabase alimentando pipeline, prioridade e conversão</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="btnRefresh" type="button">
+          <i data-lucide="refresh-cw" class="icon"></i>
+          Atualizar
+        </button>
+        <button class="btn primary" id="btnAdd" type="button">
+          <i data-lucide="plus" class="icon"></i>
+          Novo lead
+        </button>
+      </div>
+    </header>
+
+    <section class="sync-strip" aria-live="polite">
+      <div>
+        <div class="sync-main"><span class="dot" id="syncDot"></span><span id="syncStatus">Conectando ao Supabase...</span></div>
+        <div class="sync-note" id="syncInfo">Aguardando leitura da tabela leads.</div>
+      </div>
+      <div class="sync-side">
+        <span class="sync-pill"><i data-lucide="database" class="icon"></i>Supabase / public.leads</span>
+        <span class="sync-pill" id="lastSyncAt"><i data-lucide="clock-3" class="icon"></i>Aguardando atualização</span>
+      </div>
+    </section>
+
+    <section class="toolbar" aria-label="Filtros">
+      <label class="visually-hidden" for="searchInput">Buscar leads</label>
+      <input class="control search" id="searchInput" placeholder="Buscar leads..." />
+      <label class="visually-hidden" for="sourceFilter">Filtrar por fonte</label>
+      <select class="control" id="sourceFilter"><option value="">Fontes</option></select>
+      <label class="visually-hidden" for="statusFilter">Filtrar por status</label>
+      <select class="control" id="statusFilter"><option value="">Status</option></select>
+      <label class="visually-hidden" for="priorityFilter">Filtrar por prioridade</label>
+      <select class="control" id="priorityFilter"><option value="">Prioridade</option></select>
+      <label class="visually-hidden" for="periodFilter">Filtrar por período</label>
+      <select class="control" id="periodFilter">
+        <option value="">Período</option>
+        <option value="7">Últimos 7 dias</option>
+        <option value="30">Últimos 30 dias</option>
+        <option value="90">Últimos 90 dias</option>
+      </select>
+    </section>
+
+    <section class="summary-strip" aria-label="Resumo operacional">
+      <div class="summary-item">
+        <div>
+          <span class="summary-label">Filtrados</span>
+          <strong class="summary-value" id="summaryFiltered">0</strong>
+        </div>
+        <i data-lucide="list-filter" class="icon"></i>
+      </div>
+      <div class="summary-item success">
+        <div>
+          <span class="summary-label">Tratados</span>
+          <strong class="summary-value" id="summaryTreated">0</strong>
+        </div>
+        <i data-lucide="check-circle-2" class="icon"></i>
+      </div>
+      <div class="summary-item warning">
+        <div>
+          <span class="summary-label">Sem avanço</span>
+          <strong class="summary-value" id="summaryDelayed">0</strong>
+        </div>
+        <i data-lucide="timer-reset" class="icon"></i>
+      </div>
+    </section>
+
+    <section class="alert" id="alertBox">
+      <span id="alertText"></span>
+    </section>
+
+    <section class="kpis">
+      <article class="kpi">
+        <div class="kpi-label">Leads filtrados</div>
+        <div class="kpi-value" id="kpiTotal">0</div>
+        <div class="kpi-help" id="kpiTotalHelp">Base online</div>
+      </article>
+      <article class="kpi green">
+        <div class="kpi-label">Conversão</div>
+        <div class="kpi-value" id="kpiConversion">0%</div>
+        <div class="kpi-help" id="kpiConversionHelp">Vendas / leads</div>
+      </article>
+      <article class="kpi amber">
+        <div class="kpi-label">Leads quentes</div>
+        <div class="kpi-value" id="kpiHot">0</div>
+        <div class="kpi-help" id="kpiHotHelp">Prioridade comercial</div>
+      </article>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <div class="card-head">
+          <h2>Evolução mensal</h2>
+          <span class="mini">Leads por mês</span>
+        </div>
+        <div id="chartMonthly" class="chart"></div>
+      </article>
+
+      <article class="card">
+        <div class="card-head">
+          <h2>Funil comercial</h2>
+          <span class="mini" id="pipelineMini">0 leads</span>
+        </div>
+        <div class="pipeline" id="pipeline"></div>
+        <div id="chartSources" class="chart small"></div>
+      </article>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <div class="card-head">
+          <h2>Leads por status</h2>
+          <span class="mini">Distribuição atual</span>
+        </div>
+        <div id="chartStatus" class="chart small"></div>
+      </article>
+
+      <article class="card">
+        <div class="card-head">
+          <h2>Conversão por fonte</h2>
+          <span class="mini">Taxa de venda por origem</span>
+        </div>
+        <div id="chartConversionSource" class="chart small"></div>
+      </article>
+    </section>
+
+    <section class="card table-card">
+      <div class="table-top">
+        <div>
+          <h2>Base conectada</h2>
+          <div class="mini" id="tableMini">0 registros exibidos</div>
+        </div>
+        <div class="table-actions">
+          <button class="btn subtle" id="btnResetFilters" type="button">
+            <i data-lucide="filter-x" class="icon"></i>
+            Remover filtros
+          </button>
+          <button class="btn" id="btnExport" type="button">
+            <i data-lucide="download" class="icon"></i>
+            Exportar CSV
+          </button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nome</th>
+              <th>Fonte</th>
+              <th>Prioridade</th>
+              <th>Status</th>
+              <th>Data</th>
+              <th>Número</th>
+              <th>E-mail</th>
+              <th>Link</th>
+              <th>Ação</th>
+            </tr>
+            <tr class="column-filter-row">
+              <th><input class="column-filter" data-column-filter="id" placeholder="ID" inputmode="numeric" aria-label="Filtrar por ID"></th>
+              <th><input class="column-filter" data-column-filter="nome" placeholder="Nome" aria-label="Filtrar por nome"></th>
+              <th><select class="column-filter" data-column-filter="fonte" aria-label="Filtrar por fonte"><option value="">Todas</option></select></th>
+              <th><select class="column-filter" data-column-filter="prioridade" aria-label="Filtrar por prioridade"><option value="">Todas</option></select></th>
+              <th><select class="column-filter" data-column-filter="status" aria-label="Filtrar por status"><option value="">Todos</option></select></th>
+              <th><input class="column-filter" data-column-filter="data" placeholder="Data" aria-label="Filtrar por data"></th>
+              <th><input class="column-filter" data-column-filter="numero" placeholder="Numero" inputmode="tel" aria-label="Filtrar por numero"></th>
+              <th><input class="column-filter" data-column-filter="email" placeholder="E-mail" inputmode="email" aria-label="Filtrar por e-mail"></th>
+              <th><input class="column-filter" data-column-filter="link" placeholder="Link" inputmode="url" aria-label="Filtrar por link"></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="leadsTbody"></tbody>
+        </table>
+        <div class="empty" id="emptyState">Nenhum lead encontrado com os filtros atuais.</div>
+      </div>
+      <div class="table-pagination" id="tablePagination" aria-label="Paginacao dos leads"></div>
+    </section>
+
+    <footer class="footer">
+      Este painel consulta a tabela <strong>leads</strong> no Supabase. Criação, edição e exclusão são salvas no banco online.
+    </footer>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const SUPABASE_URL = 'https://cjlzzhjdkkpgzfnnatlj.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_gJ1LkHbIwm7bi_mvcn5bnw_hNPChxR-';
+    const SUPABASE_SELECT_COLUMNS = [
+      'id', 'lead', 'nome', 'empresa', 'fonte', 'status', 'data', 'link',
+      'email', 'perfil', 'numero', 'telefone', 'observacao', 'created_at',
+      'updated_at'
+    ].join(',');
+    const STATUS_ORDER = ['Captado', 'Visualizado', 'Tratado', 'Retorno', 'Fechado-Venda', 'Fechado-Perda'];
+    const PRIORITY_ORDER = ['Quente', 'Morno', 'Frio'];
+    const TABLE_PAGE_SIZE = 500;
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let leadsData = [];
+    let filteredData = [];
+    let totalLeadsCount = 0;
+    let currentPage = 1;
+    const COLUMN_FILTER_FIELDS = ['id', 'nome', 'fonte', 'prioridade', 'status', 'data', 'numero', 'email', 'link'];
+
+    const el = id => document.getElementById(id);
+    const setText = (id, value) => {
+      const node = el(id);
+      if (node) node.textContent = value;
+    };
+    const setHTML = (id, value) => {
+      const node = el(id);
+      if (node) node.innerHTML = value;
+    };
+    const toggleClass = (id, className, enabled) => {
+      const node = el(id);
+      if (node) node.classList.toggle(className, enabled);
+    };
+    const normalize = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    const fmtClock = date => date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+    function refreshIcons() {
+      if (window.lucide?.createIcons) window.lucide.createIcons();
+    }
+
+    function setLoading(isLoading) {
+      document.body.classList.toggle('is-loading', isLoading);
+      const refreshButton = el('btnRefresh');
+      if (refreshButton) refreshButton.disabled = isLoading;
+    }
+
+    function setLastSync(date = new Date()) {
+      if (!el('lastSyncAt')) return;
+      el('lastSyncAt').innerHTML = `<i data-lucide="clock-3" class="icon"></i>Atualizado às ${fmtClock(date)}`;
+      refreshIcons();
+    }
+
+    function tokenClass(value) {
+      return normalize(value).replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    }
+
+    function leadIsDelayed(lead) {
+      return ['Captado', 'Visualizado', 'Retorno'].includes(lead.status) && Number(daysSince(lead.data)) >= 3;
+    }
+
+    function toast(message) {
+      const toastEl = el('toast');
+      if (!toastEl) return;
+      toastEl.textContent = message;
+      toastEl.classList.add('show');
+      setTimeout(() => toastEl.classList.remove('show'), 2800);
+    }
+
+    function escapeHTML(value) {
+      return String(value ?? '').replace(/[&<>'"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[ch]));
+    }
+
+    function parseDateBR(value) {
+      if (!value) return null;
+      const raw = String(value).trim();
+      if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
+        const date = new Date(raw.slice(0, 10) + 'T00:00:00');
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+      const parts = raw.split(/[\/\-.]/).map(Number);
+      if (parts.length >= 3) {
+        let [d, m, y] = parts;
+        if (y < 100) y += 2000;
+        const date = new Date(y, m - 1, d);
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+      return null;
+    }
+
+    function daysSince(dateText) {
+      const date = parseDateBR(dateText);
+      if (!date) return '';
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      date.setHours(0, 0, 0, 0);
+      const diff = Math.floor((today - date) / 86400000);
+      return diff < 0 ? 0 : diff;
+    }
+
+    function matchStatus(status) {
+      const n = normalize(status).replace(/\s+/g, '-');
+      if (n.includes('venda') || n === 'fechado') return 'Fechado-Venda';
+      if (n.includes('perda') || n.includes('perdido')) return 'Fechado-Perda';
+      if (n.includes('visual')) return 'Visualizado';
+      if (n.includes('trat')) return 'Tratado';
+      if (n.includes('retorno') || n.includes('follow')) return 'Retorno';
+      return 'Captado';
+    }
+
+    function matchPriority(priority) {
+      const n = normalize(priority);
+      if (n.includes('quent')) return 'Quente';
+      if (n.includes('morn')) return 'Morno';
+      if (n.includes('fri')) return 'Frio';
+      return 'Frio';
+    }
+
+    function normalizeLead(row) {
+      const nome = row.nome || row.lead || row.empresa || 'Sem nome';
+      return {
+        id: row.id ?? '',
+        lead: row.lead || nome,
+        nome,
+        empresa: row.empresa || nome,
+        fonte: row.fonte || row.origem_base || 'Não informado',
+        categoria: row.categoria || '',
+        prioridade: matchPriority(row.prioridade),
+        status: matchStatus(row.status || 'Captado'),
+        data: row.data || row.created_at || '',
+        numero: row.numero || row.telefone || '',
+        telefone: row.telefone || row.numero || '',
+        email: row.email || '',
+        link: row.link || row.perfil || row.site || '',
+        perfil: row.perfil || row.link || '',
+        site: row.site || '',
+        observacao: row.observacao || '',
+        _raw: row
+      };
+    }
+
+    async function fetchAllLeads() {
+      const pageSize = 1000;
+      let from = 0;
+      let total = 0;
+      const rows = [];
+
+      while (true) {
+        const { data, error, count } = await supabaseClient
+          .from('leads')
+          .select(SUPABASE_SELECT_COLUMNS, { count: 'exact' })
+          .order('id', { ascending: false })
+          .range(from, from + pageSize - 1);
+
+        if (error) throw new Error(error.message);
+        if (typeof count === 'number') total = count;
+        rows.push(...(data || []));
+
+        if (!data || data.length < pageSize) break;
+        from += pageSize;
+        if (total && rows.length >= total) break;
+      }
+
+      return { data: rows, count: total || rows.length };
+    }
+
+    async function loadData(silent = false) {
+      const showLoading = !silent || !leadsData.length;
+      if (showLoading) setLoading(true);
+
+      try {
+        const { data, count } = await fetchAllLeads();
+
+        leadsData = (data || []).map(normalizeLead);
+        totalLeadsCount = Number(count ?? leadsData.length);
+        toggleClass('syncDot', 'off', false);
+        setText('syncStatus', 'Supabase conectado e sincronizado');
+        setText('syncInfo', `${totalLeadsCount} leads no Supabase | ${leadsData.length} carregados | atualização automática a cada 10s`);
+        setLastSync();
+        try {
+          refreshFilters();
+          applyFilters(false);
+        } catch (renderErr) {
+          console.error('Erro ao renderizar dashboard:', renderErr);
+          setText('syncStatus', 'Supabase conectado; erro ao renderizar painel');
+          setText('syncInfo', renderErr.message);
+          toast(renderErr.message);
+          return;
+        }
+        if (!silent) toast('Dados atualizados do Supabase.');
+      } catch (err) {
+        toggleClass('syncDot', 'off', true);
+        setText('syncStatus', 'Erro ao conectar no Supabase');
+        setText('syncInfo', err.message);
+        toast(err.message);
+      } finally {
+        if (showLoading) setLoading(false);
+        refreshIcons();
+      }
+    }
+
+    function refreshFilters() {
+      fillSelect('sourceFilter', 'Fontes', [...new Set(leadsData.map(lead => lead.fonte).filter(Boolean))].sort());
+      fillSelect('statusFilter', 'Status', STATUS_ORDER.filter(status => leadsData.some(lead => lead.status === status)));
+      fillSelect('priorityFilter', 'Prioridade', PRIORITY_ORDER.filter(priority => leadsData.some(lead => lead.prioridade === priority)));
+      fillColumnSelect('fonte', 'Todas', [...new Set(leadsData.map(lead => lead.fonte).filter(Boolean))].sort());
+      fillColumnSelect('prioridade', 'Todas', PRIORITY_ORDER.filter(priority => leadsData.some(lead => lead.prioridade === priority)));
+      fillColumnSelect('status', 'Todos', STATUS_ORDER.filter(status => leadsData.some(lead => lead.status === status)));
+    }
+
+    function fillSelect(id, label, options) {
+      const select = el(id);
+      if (!select) return;
+      const selected = select.value;
+      select.innerHTML = `<option value="">${label}</option>` + options.map(option => `<option value="${escapeHTML(option)}">${escapeHTML(option)}</option>`).join('');
+      select.value = options.includes(selected) ? selected : '';
+    }
+
+    function fillColumnSelect(field, label, options) {
+      const select = document.querySelector(`[data-column-filter="${field}"]`);
+      if (!select) return;
+      const selected = select.value;
+      select.innerHTML = `<option value="">${label}</option>` + options.map(option => `<option value="${escapeHTML(option)}">${escapeHTML(option)}</option>`).join('');
+      select.value = options.includes(selected) ? selected : '';
+    }
+
+    function getColumnFilters() {
+      return [...document.querySelectorAll('[data-column-filter]')].reduce((filters, input) => {
+        const field = input.dataset.columnFilter;
+        const value = String(input.value || '').trim();
+        if (field && value) filters[field] = value;
+        return filters;
+      }, {});
+    }
+
+    function leadColumnValue(lead, field) {
+      if (field === 'data') return formatDateForInput(lead.data);
+      return String(lead[field] ?? '');
+    }
+
+    function matchesColumnFilters(lead, filters) {
+      return COLUMN_FILTER_FIELDS.every(field => {
+        const wanted = filters[field];
+        if (!wanted) return true;
+
+        const actual = leadColumnValue(lead, field);
+        if (['fonte', 'prioridade', 'status'].includes(field)) {
+          return actual === wanted;
+        }
+        if (field === 'numero') {
+          const wantedDigits = wanted.replace(/\D/g, '');
+          const actualDigits = actual.replace(/\D/g, '');
+          if (wantedDigits) return actualDigits.includes(wantedDigits);
+        }
+        return normalize(actual).includes(normalize(wanted));
+      });
+    }
+
+    function applyFilters(resetPage = true) {
+      const q = normalize(el('searchInput').value);
+      const source = el('sourceFilter').value;
+      const status = el('statusFilter').value;
+      const priority = el('priorityFilter').value;
+      const period = Number(el('periodFilter').value || 0);
+      const columnFilters = getColumnFilters();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      filteredData = leadsData.filter(lead => {
+        const text = [
+          lead.id, lead.nome, lead.empresa, lead.fonte, lead.categoria, lead.prioridade, lead.status,
+          lead.data, lead.numero, lead.email, lead.link, lead.observacao
+        ].join(' ');
+        const matchesText = !q || normalize(text).includes(q);
+        const matchesSource = !source || lead.fonte === source;
+        const matchesStatus = !status || lead.status === status;
+        const matchesPriority = !priority || lead.prioridade === priority;
+        let matchesPeriod = true;
+
+        if (period) {
+          const date = parseDateBR(lead.data);
+          matchesPeriod = date ? ((today - date) / 86400000 <= period) : false;
+        }
+
+        return matchesText && matchesSource && matchesStatus && matchesPriority && matchesPeriod && matchesColumnFilters(lead, columnFilters);
+      }).sort((a, b) => (parseDateBR(b.data) || 0) - (parseDateBR(a.data) || 0));
+
+      currentPage = resetPage ? 1 : clampTablePage(currentPage);
+      renderAll();
+    }
+
+    function renderAll() {
+      renderKPIs();
+      renderSummary();
+      renderAlert();
+      renderPipeline();
+      renderTable();
+      renderPagination();
+      renderCharts();
+      refreshIcons();
+    }
+
+    function renderKPIs() {
+      const total = filteredData.length;
+      const totalBase = totalLeadsCount || leadsData.length;
+      const sales = filteredData.filter(lead => lead.status === 'Fechado-Venda').length;
+      const hot = filteredData.filter(lead => lead.prioridade === 'Quente').length;
+      const conversion = total ? (sales / total * 100) : 0;
+      const treated = filteredData.filter(lead => ['Tratado', 'Retorno', 'Fechado-Venda', 'Fechado-Perda'].includes(lead.status)).length;
+
+      el('kpiTotal').textContent = total;
+      el('kpiConversion').textContent = conversion.toFixed(1).replace('.', ',') + '%';
+      el('kpiHot').textContent = hot;
+      el('kpiTotalHelp').textContent = `${totalBase} leads na base online | ${treated} tratados`;
+      el('kpiConversionHelp').textContent = `${sales} vendas fechadas`;
+      el('kpiHotHelp').textContent = 'Prioridade comercial';
+    }
+
+    function renderSummary() {
+      const treated = filteredData.filter(lead => ['Tratado', 'Retorno', 'Fechado-Venda', 'Fechado-Perda'].includes(lead.status)).length;
+      const delayed = filteredData.filter(leadIsDelayed).length;
+
+      el('summaryFiltered').textContent = filteredData.length;
+      el('summaryTreated').textContent = treated;
+      el('summaryDelayed').textContent = delayed;
+    }
+
+    function renderAlert() {
+      const delayed = filteredData.filter(leadIsDelayed);
+      const box = el('alertBox');
+      if (!box) return;
+
+      if (delayed.length) {
+        box.classList.add('show');
+        setHTML('alertText', `<strong>${delayed.length} leads</strong> sem avanco ha 3 dias ou mais.`);
+      } else {
+        box.classList.remove('show');
+      }
+    }
+
+    function renderPipeline() {
+      const total = filteredData.length || 1;
+      el('pipelineMini').textContent = `${filteredData.length} leads filtrados`;
+      el('pipeline').innerHTML = STATUS_ORDER.map(status => {
+        const count = filteredData.filter(lead => lead.status === status).length;
+        const pct = (count / total) * 100;
+        return `<div class="pipe-row"><strong title="${status}">${status}</strong><div class="bar"><span style="width:${pct}%"></span></div><span>${count}</span></div>`;
+      }).join('');
+    }
+
+    function totalTablePages() {
+      return Math.max(1, Math.ceil(filteredData.length / TABLE_PAGE_SIZE));
+    }
+
+    function clampTablePage(page) {
+      const number = Number(page) || 1;
+      return Math.min(Math.max(1, number), totalTablePages());
+    }
+
+    function goToTablePage(page) {
+      currentPage = clampTablePage(page);
+      renderTable();
+      renderPagination();
+      refreshIcons();
+    }
+
+    function renderTable() {
+      const tbody = el('leadsTbody');
+      if (!tbody) return;
+
+      currentPage = clampTablePage(currentPage);
+      const start = filteredData.length ? (currentPage - 1) * TABLE_PAGE_SIZE : 0;
+      const visibleRows = filteredData.slice(start, start + TABLE_PAGE_SIZE);
+      const end = start + visibleRows.length;
+
+      setText(
+        'tableMini',
+        filteredData.length
+          ? `${start + 1}-${end} de ${filteredData.length} registros | pagina ${currentPage} de ${totalTablePages()}`
+          : '0 registros exibidos'
+      );
+      const emptyState = el('emptyState');
+      if (emptyState) emptyState.style.display = filteredData.length ? 'none' : 'block';
+
+      tbody.innerHTML = visibleRows.map(lead => {
+        const attention = leadIsDelayed(lead);
+        const priorityClass = tokenClass(lead.prioridade);
+        const statusClass = tokenClass(lead.status);
+
+        return `<tr data-attention="${attention ? 'true' : 'false'}">
+          <td>#${escapeHTML(lead.id)}</td>
+          <td><input class="table-input name-input" data-id="${escapeHTML(lead.id)}" data-field="nome" value="${escapeHTML(lead.nome)}" aria-label="Nome do lead"></td>
+          <td><input class="table-input" data-id="${escapeHTML(lead.id)}" data-field="fonte" value="${escapeHTML(lead.fonte)}" aria-label="Fonte"></td>
+          <td>
+            <select class="table-input pill-select priority-${priorityClass}" data-id="${escapeHTML(lead.id)}" data-field="prioridade" aria-label="Prioridade">
+              ${PRIORITY_ORDER.map(priority => `<option value="${priority}" ${lead.prioridade === priority ? 'selected' : ''}>${priority}</option>`).join('')}
+            </select>
+          </td>
+          <td>
+            <select class="table-input pill-select status-${statusClass}" data-id="${escapeHTML(lead.id)}" data-field="status" aria-label="Status">
+              ${STATUS_ORDER.map(status => `<option value="${status}" ${lead.status === status ? 'selected' : ''}>${status}</option>`).join('')}
+            </select>
+          </td>
+          <td><input class="table-input" data-id="${escapeHTML(lead.id)}" data-field="data" value="${escapeHTML(formatDateForInput(lead.data))}" placeholder="dd/mm/aaaa" aria-label="Data"></td>
+          <td><input class="table-input" data-id="${escapeHTML(lead.id)}" data-field="numero" value="${escapeHTML(lead.numero)}" inputmode="tel" aria-label="Número"></td>
+          <td><input class="table-input" data-id="${escapeHTML(lead.id)}" data-field="email" value="${escapeHTML(lead.email)}" inputmode="email" aria-label="E-mail"></td>
+          <td><input class="table-input link-input" data-id="${escapeHTML(lead.id)}" data-field="link" value="${escapeHTML(lead.link)}" inputmode="url" aria-label="Link"></td>
+          <td>
+            <button class="btn primary save-row" type="button" data-id="${escapeHTML(lead.id)}"><i data-lucide="save" class="icon"></i>Salvar</button>
+            <button class="btn danger del-row" type="button" data-id="${escapeHTML(lead.id)}"><i data-lucide="trash-2" class="icon"></i>Excluir</button>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function paginationPages(totalPages, page) {
+      if (totalPages <= 9) {
+        return Array.from({ length: totalPages }, (_item, index) => index + 1);
+      }
+
+      const pages = [1];
+      const start = Math.max(2, page - 2);
+      const end = Math.min(totalPages - 1, page + 2);
+
+      if (start > 2) pages.push('gap-start');
+      for (let number = start; number <= end; number += 1) {
+        pages.push(number);
+      }
+      if (end < totalPages - 1) pages.push('gap-end');
+      pages.push(totalPages);
+      return pages;
+    }
+
+    function renderPagination() {
+      const pagination = el('tablePagination');
+      if (!pagination) return;
+
+      const totalPages = totalTablePages();
+      currentPage = clampTablePage(currentPage);
+
+      if (!filteredData.length) {
+        pagination.innerHTML = '';
+        return;
+      }
+
+      const pages = paginationPages(totalPages, currentPage);
+      pagination.innerHTML = [
+        `<button class="page-btn" type="button" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button>`,
+        ...pages.map(page => {
+          if (String(page).startsWith('gap')) return '<span class="page-gap">...</span>';
+          return `<button class="page-btn ${page === currentPage ? 'active' : ''}" type="button" data-page="${page}" aria-current="${page === currentPage ? 'page' : 'false'}">${page}</button>`;
+        }),
+        `<button class="page-btn" type="button" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>Proxima</button>`,
+      ].join('');
+    }
+
+    function formatDateForInput(value) {
+      const date = parseDateBR(value);
+      if (!date) return value || '';
+      return date.toLocaleDateString('pt-BR');
+    }
+
+    function renderCharts() {
+      if (!window.Plotly) {
+        ['chartMonthly', 'chartSources', 'chartStatus', 'chartConversionSource'].forEach(id => {
+          setHTML(id, '<div class="fallback-chart">Grafico indisponivel sem conexao com a biblioteca Plotly.</div>');
+        });
+        return;
+      }
+
+      const baseLayout = {
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        font: { color: '#172033', family: 'Inter, Segoe UI, Arial', size: 12 },
+        margin: { t: 12, b: 38, l: 46, r: 14 },
+        xaxis: { gridcolor: '#e5e7eb', zerolinecolor: '#e5e7eb' },
+        yaxis: { gridcolor: '#e5e7eb', zerolinecolor: '#e5e7eb' }
+      };
+      const config = { responsive: true, displayModeBar: false };
+
+      const monthly = {};
+      filteredData.forEach(lead => {
+        const date = parseDateBR(lead.data);
+        const key = date ? `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}` : 'Sem data';
+        monthly[key] = (monthly[key] || 0) + 1;
+      });
+      const monthlyKeys = Object.keys(monthly).sort((a, b) => {
+        if (a === 'Sem data') return 1;
+        if (b === 'Sem data') return -1;
+        const [ma, ya] = a.split('/').map(Number);
+        const [mb, yb] = b.split('/').map(Number);
+        return new Date(ya, ma - 1) - new Date(yb, mb - 1);
+      });
+
+      Plotly.newPlot('chartMonthly', [{
+        x: monthlyKeys,
+        y: monthlyKeys.map(key => monthly[key]),
+        type: 'bar',
+        marker: { color: '#176b87' },
+        hovertemplate: '%{x}<br>%{y} leads<extra></extra>'
+      }], baseLayout, config);
+
+      const sourceRows = Object.entries(countBy(filteredData, 'fonte')).sort((a, b) => b[1] - a[1]).slice(0, 7);
+      Plotly.newPlot('chartSources', [{
+        x: sourceRows.map(row => row[1]),
+        y: sourceRows.map(row => row[0]),
+        type: 'bar',
+        orientation: 'h',
+        marker: { color: '#12395a' },
+        hovertemplate: '%{y}<br>%{x} leads<extra></extra>'
+      }], { ...baseLayout, margin: { t: 8, b: 30, l: 120, r: 14 } }, config);
+
+      const statusCounts = STATUS_ORDER.map(status => filteredData.filter(lead => lead.status === status).length);
+      Plotly.newPlot('chartStatus', [{
+        labels: STATUS_ORDER,
+        values: statusCounts,
+        type: 'pie',
+        hole: .58,
+        marker: { colors: ['#f59e0b', '#1d4ed8', '#176b87', '#6d28d9', '#15803d', '#b91c1c'] },
+        textinfo: 'label+percent',
+        hovertemplate: '%{label}<br>%{value} leads<extra></extra>'
+      }], { ...baseLayout, showlegend: false, margin: { t: 8, b: 8, l: 8, r: 8 } }, config);
+
+      const sourceTotals = {};
+      const sourceSales = {};
+      filteredData.forEach(lead => {
+        sourceTotals[lead.fonte] = (sourceTotals[lead.fonte] || 0) + 1;
+        if (lead.status === 'Fechado-Venda') sourceSales[lead.fonte] = (sourceSales[lead.fonte] || 0) + 1;
+      });
+      const convRows = Object.keys(sourceTotals).map(source => [source, (sourceSales[source] || 0) / sourceTotals[source] * 100]).sort((a, b) => b[1] - a[1]).slice(0, 7);
+      Plotly.newPlot('chartConversionSource', [{
+        x: convRows.map(row => row[0]),
+        y: convRows.map(row => Number(row[1].toFixed(1))),
+        type: 'bar',
+        marker: { color: '#15803d' },
+        hovertemplate: '%{x}<br>%{y}%<extra></extra>'
+      }], { ...baseLayout, yaxis: { ...baseLayout.yaxis, ticksuffix: '%' } }, config);
+    }
+
+    function countBy(data, key) {
+      return data.reduce((acc, item) => {
+        const label = item[key] || 'Não informado';
+        acc[label] = (acc[label] || 0) + 1;
+        return acc;
+      }, {});
+    }
+
+    async function saveRow(id) {
+      const inputs = [...document.querySelectorAll(`[data-id="${CSS.escape(String(id))}"][data-field]`)];
+      const updates = {};
+
+      inputs.forEach(input => {
+        updates[input.dataset.field] = input.value;
+      });
+
+      updates.lead = updates.nome;
+      updates.empresa = updates.nome;
+      updates.status = matchStatus(updates.status);
+      updates.prioridade = matchPriority(updates.prioridade);
+      updates.telefone = updates.numero || '';
+      updates.updated_at = new Date().toISOString();
+
+      const { error } = await supabaseClient
+        .from('leads')
+        .update(updates)
+        .eq('id', id);
+
+      if (error) throw new Error(error.message);
+      toast('Lead salvo no Supabase.');
+      await loadData(true);
+    }
+
+    async function addLead() {
+      const nome = prompt('Nome do lead/empresa:');
+      if (!nome) return;
+      const fonte = prompt('Fonte:', 'Manual') || 'Manual';
+      const hoje = new Date().toLocaleDateString('pt-BR');
+      const row = {
+        lead: nome,
+        nome,
+        empresa: nome,
+        fonte,
+        prioridade: 'Morno',
+        status: 'Captado',
+        data: hoje,
+        link: '',
+        email: '',
+        perfil: '',
+        numero: '',
+        telefone: '',
+        observacao: ''
+      };
+
+      const { error } = await supabaseClient
+        .from('leads')
+        .insert([row]);
+
+      if (error) throw new Error(error.message);
+      toast('Novo lead criado no Supabase.');
+      await loadData(true);
+    }
+
+    async function deleteLead(id) {
+      if (!confirm('Excluir este lead do Supabase?')) return;
+      const { error } = await supabaseClient
+        .from('leads')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw new Error(error.message);
+      toast('Lead excluído do Supabase.');
+      await loadData(true);
+    }
+
+    function exportCSV() {
+      const rows = [
+        ['ID', 'Nome', 'Fonte', 'Prioridade', 'Status', 'Data', 'Numero', 'Email', 'Link'],
+        ...filteredData.map(lead => [lead.id, lead.nome, lead.fonte, lead.prioridade, lead.status, lead.data, lead.numero, lead.email, lead.link])
+      ];
+      const csv = rows.map(row => row.map(value => `"${String(value ?? '').replace(/"/g, '""')}"`).join(';')).join('\n');
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = 'leads_construtec_supabase.csv';
+      anchor.click();
+      URL.revokeObjectURL(url);
+    }
+
+    ['searchInput', 'sourceFilter', 'statusFilter', 'priorityFilter', 'periodFilter'].forEach(id => {
+      el(id).addEventListener('input', applyFilters);
+    });
+
+    document.querySelectorAll('[data-column-filter]').forEach(input => {
+      input.addEventListener('input', applyFilters);
+      input.addEventListener('change', applyFilters);
+    });
+
+    el('btnRefresh').addEventListener('click', () => loadData(false));
+    el('btnExport').addEventListener('click', exportCSV);
+    el('btnAdd').addEventListener('click', () => addLead().catch(err => toast(err.message)));
+    el('btnResetFilters').addEventListener('click', () => {
+      ['searchInput', 'sourceFilter', 'statusFilter', 'priorityFilter', 'periodFilter'].forEach(id => {
+        el(id).value = '';
+      });
+      document.querySelectorAll('[data-column-filter]').forEach(input => {
+        input.value = '';
+      });
+      applyFilters();
+    });
+
+    function updatePillSelectStyle(select) {
+      if (!select?.classList) return;
+      const prefix = select.dataset.field === 'status' ? 'status-' : 'priority-';
+      [...select.classList].forEach(name => {
+        if (name.startsWith(prefix)) select.classList.remove(name);
+      });
+      select.classList.add(prefix + tokenClass(select.value));
+    }
+
+    el('leadsTbody').addEventListener('change', event => {
+      if (event.target?.classList?.contains('pill-select')) {
+        updatePillSelectStyle(event.target);
+      }
+    });
+
+    el('leadsTbody').addEventListener('click', event => {
+      const button = event.target.closest('button');
+      if (!button) return;
+
+      if (button.classList.contains('save-row')) {
+        saveRow(button.dataset.id).catch(err => toast(err.message));
+      }
+      if (button.classList.contains('del-row')) {
+        deleteLead(button.dataset.id).catch(err => toast(err.message));
+      }
+    });
+
+    el('tablePagination').addEventListener('click', event => {
+      const button = event.target.closest('button[data-page]');
+      if (!button || button.disabled) return;
+      goToTablePage(button.dataset.page);
+    });
+
+    refreshIcons();
+    loadData(true);
+
+    const realtimeChannel = supabaseClient
+      .channel('leads-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => loadData(true))
+      .subscribe(status => {
+        if (status === 'SUBSCRIBED') {
+          el('syncStatus').textContent = 'Supabase conectado ao vivo';
+          el('syncInfo').textContent = `${totalLeadsCount || leadsData.length} leads no Supabase | Realtime ativo + atualização a cada 10s`;
+        }
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          el('syncInfo').textContent = `${totalLeadsCount || leadsData.length} leads no Supabase | Realtime indisponível, usando atualização a cada 10s`;
+        }
+      });
+
+    setInterval(() => loadData(true), 10000);
+  </script>
+</body>
+</html>
