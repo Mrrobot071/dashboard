@@ -620,6 +620,7 @@
 
     tbody tr:hover {
       background: #fbfcfe;
+      cursor: pointer;
     }
 
     tbody tr:hover td:first-child {
@@ -628,6 +629,23 @@
 
     tbody tr[data-attention="true"] td:first-child {
       box-shadow: inset 4px 0 0 var(--amber);
+    }
+
+    tbody tr[data-selected="true"],
+    tbody tr[data-selected="true"]:hover {
+      background: #e8f7f8;
+    }
+
+    tbody tr[data-selected="true"] td:first-child,
+    tbody tr[data-selected="true"]:hover td:first-child {
+      color: var(--brand);
+      background: #e8f7f8;
+      box-shadow: inset 4px 0 0 var(--aqua);
+    }
+
+    tbody tr[data-selected="true"] .table-input {
+      border-color: rgba(34, 167, 168, .42);
+      background: #f7feff;
     }
 
     .table-input {
@@ -823,7 +841,7 @@
         <div class="mark">CT</div>
         <div>
           <h1>Dashboard Online de Leads</h1>
-          <div class="subtitle">Construtec Engenharia | Supabase alimentando pipeline, prioridade sugerida e conversão</div>
+          <div class="subtitle">Construtec Engenharia | Supabase alimentando pipeline, prioridade e conversão</div>
         </div>
       </div>
 
@@ -857,8 +875,8 @@
       <select class="control" id="sourceFilter"><option value="">Fontes</option></select>
       <label class="visually-hidden" for="statusFilter">Filtrar por status</label>
       <select class="control" id="statusFilter"><option value="">Status</option></select>
-      <label class="visually-hidden" for="priorityFilter">Filtrar por prioridade sugerida</label>
-      <select class="control" id="priorityFilter"><option value="">Prioridade sugerida</option></select>
+      <label class="visually-hidden" for="priorityFilter">Filtrar por prioridade</label>
+      <select class="control" id="priorityFilter"><option value="">Prioridade</option></select>
       <label class="visually-hidden" for="periodFilter">Filtrar por período</label>
       <select class="control" id="periodFilter">
         <option value="">Período</option>
@@ -908,9 +926,9 @@
         <div class="kpi-help" id="kpiConversionHelp">Vendas / leads</div>
       </article>
       <article class="kpi amber">
-        <div class="kpi-label">Quentes sugeridos</div>
+        <div class="kpi-label">Leads quentes</div>
         <div class="kpi-value" id="kpiHot">0</div>
-        <div class="kpi-help" id="kpiHotHelp">Mornos e frios pela análise</div>
+        <div class="kpi-help" id="kpiHotHelp">Mornos e frios pela prioridade</div>
       </article>
     </section>
 
@@ -936,7 +954,7 @@
     <section class="grid">
       <article class="card">
         <div class="card-head">
-          <h2>Status e prioridade sugerida</h2>
+          <h2>Status e prioridade</h2>
           <span class="mini">Score calculado pelo painel</span>
         </div>
         <div id="chartStatus" class="chart small"></div>
@@ -975,7 +993,7 @@
               <th>ID</th>
               <th>Nome</th>
               <th>Fonte</th>
-              <th>Prioridade sugerida</th>
+              <th>Prioridade</th>
               <th>Status</th>
               <th>Data</th>
               <th>Número</th>
@@ -1023,6 +1041,7 @@
     let filteredData = [];
     let totalLeadsCount = 0;
     let currentPage = 1;
+    let selectedLeadId = '';
     const COLUMN_FILTER_FIELDS = ['id', 'nome', 'fonte', 'status', 'data', 'numero', 'email', 'link'];
 
     const el = id => document.getElementById(id);
@@ -1224,10 +1243,10 @@
 
     function refreshFilters() {
       const duplicateCounts = duplicateCountsFor(leadsData);
-      const suggestedPriorities = leadsData.map(lead => leadAnalysis(lead, duplicateCounts).suggestedPriority);
+      const priorities = leadsData.map(lead => leadAnalysis(lead, duplicateCounts).priority);
       fillSelect('sourceFilter', 'Fontes', [...new Set(leadsData.map(lead => lead.fonte).filter(Boolean))].sort());
       fillSelect('statusFilter', 'Status', STATUS_ORDER.filter(status => leadsData.some(lead => lead.status === status)));
-      fillSelect('priorityFilter', 'Prioridade sugerida', PRIORITY_ORDER.filter(priority => suggestedPriorities.includes(priority)));
+      fillSelect('priorityFilter', 'Prioridade', PRIORITY_ORDER.filter(priority => priorities.includes(priority)));
       fillColumnSelect('fonte', 'Todas', [...new Set(leadsData.map(lead => lead.fonte).filter(Boolean))].sort());
       fillColumnSelect('status', 'Todos', STATUS_ORDER.filter(status => leadsData.some(lead => lead.status === status)));
     }
@@ -1294,13 +1313,13 @@
       filteredData = leadsData.filter(lead => {
         const analysis = leadAnalysis(lead, duplicateCounts);
         const text = [
-          lead.id, lead.nome, lead.empresa, lead.fonte, lead.categoria, lead.prioridade, analysis.suggestedPriority, lead.status,
+          lead.id, lead.nome, lead.empresa, lead.fonte, lead.categoria, analysis.priority, lead.status,
           lead.data, lead.numero, lead.email, lead.link, lead.observacao
         ].join(' ');
         const matchesText = !q || normalize(text).includes(q);
         const matchesSource = !source || lead.fonte === source;
         const matchesStatus = !status || lead.status === status;
-        const matchesPriority = !priority || analysis.suggestedPriority === priority;
+        const matchesPriority = !priority || analysis.priority === priority;
         let matchesPeriod = true;
 
         if (period) {
@@ -1331,13 +1350,13 @@
       const totalBase = totalLeadsCount || leadsData.length;
       const sales = filteredData.filter(lead => lead.status === 'Fechado-Venda').length;
       const duplicateCounts = duplicateCountsFor(filteredData);
-      const suggestedPriorityCounts = countBy(
-        filteredData.map(lead => ({ prioridade: leadAnalysis(lead, duplicateCounts).suggestedPriority })),
+      const priorityCounts = countBy(
+        filteredData.map(lead => ({ prioridade: leadAnalysis(lead, duplicateCounts).priority })),
         'prioridade'
       );
-      const hot = suggestedPriorityCounts.Quente || 0;
-      const warm = suggestedPriorityCounts.Morno || 0;
-      const cold = suggestedPriorityCounts.Frio || 0;
+      const hot = priorityCounts.Quente || 0;
+      const warm = priorityCounts.Morno || 0;
+      const cold = priorityCounts.Frio || 0;
       const conversion = total ? (sales / total * 100) : 0;
       const treated = filteredData.filter(lead => ['Tratado', 'Retorno', 'Fechado-Venda', 'Fechado-Perda'].includes(lead.status)).length;
 
@@ -1397,6 +1416,17 @@
       refreshIcons();
     }
 
+    function selectLeadRow(id) {
+      selectedLeadId = String(id ?? '');
+      document.querySelectorAll('#leadsTbody tr[data-row-id]').forEach(row => {
+        if (row.dataset.rowId === selectedLeadId) {
+          row.dataset.selected = 'true';
+        } else {
+          row.removeAttribute('data-selected');
+        }
+      });
+    }
+
     function renderTable() {
       const tbody = el('leadsTbody');
       if (!tbody) return;
@@ -1420,17 +1450,18 @@
         const analysis = leadAnalysis(lead, duplicateCounts);
         const attention = leadIsDelayed(lead);
         const statusClass = tokenClass(lead.status);
-        const priorityClass = tokenClass(analysis.suggestedPriority);
+        const priorityClass = tokenClass(analysis.priority);
         const linkHref = externalURL(lead.link);
         const linkButton = linkHref
           ? `<a class="link-open" href="${escapeHTML(linkHref)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir link em nova guia" title="Abrir link em nova guia"><i data-lucide="external-link" class="icon"></i></a>`
           : `<span class="link-open disabled" aria-label="Sem link" title="Sem link"><i data-lucide="external-link" class="icon"></i></span>`;
+        const rowSelected = selectedLeadId && String(lead.id) === selectedLeadId;
 
-        return `<tr data-attention="${attention ? 'true' : 'false'}">
+        return `<tr data-row-id="${escapeHTML(lead.id)}" data-attention="${attention ? 'true' : 'false'}" data-selected="${rowSelected ? 'true' : 'false'}">
           <td>#${escapeHTML(lead.id)}</td>
           <td><input class="table-input name-input" data-id="${escapeHTML(lead.id)}" data-field="nome" value="${escapeHTML(lead.nome)}" aria-label="Nome do lead"></td>
           <td><input class="table-input" data-id="${escapeHTML(lead.id)}" data-field="fonte" value="${escapeHTML(lead.fonte)}" aria-label="Fonte"></td>
-          <td><span class="priority-badge priority-${priorityClass}" title="Prioridade sugerida pelo score">${escapeHTML(analysis.suggestedPriority)}</span></td>
+          <td><span class="priority-badge priority-${priorityClass}" title="Prioridade calculada pelo score">${escapeHTML(analysis.priority)}</span></td>
           <td>
             <select class="table-input pill-select status-${statusClass}" data-id="${escapeHTML(lead.id)}" data-field="status" aria-label="Status">
               ${STATUS_ORDER.map(status => `<option value="${status}" ${lead.status === status ? 'selected' : ''}>${status}</option>`).join('')}
@@ -1605,7 +1636,7 @@
       const statusPriority = PRIORITY_ORDER.map(priority => ({
         x: STATUS_ORDER,
         y: STATUS_ORDER.map(status =>
-          rows.filter(row => row.lead.status === status && row.analysis.suggestedPriority === priority).length
+          rows.filter(row => row.lead.status === status && row.analysis.priority === priority).length
         ),
         name: priority,
         type: 'bar',
@@ -1862,7 +1893,7 @@
       score += city || state ? 5 : 0;
       score += lead.data ? 5 : 0;
       score = Math.min(score, 100);
-      const suggestedPriority = score >= 75 ? 'Quente' : (score >= 50 ? 'Morno' : 'Frio');
+      const priority = score >= 75 ? 'Quente' : (score >= 50 ? 'Morno' : 'Frio');
       const filled = [lead.nome, lead.fonte, category, lead.status, lead.data, phone, email, lead.link, lead.site, city, state].filter(Boolean).length;
       const key = analysisKey(lead);
       const duplicate = key && duplicateCounts[key] > 1;
@@ -1877,7 +1908,7 @@
           ? 'acompanhar resultado'
           : delayed
             ? 'follow-up imediato'
-            : suggestedPriority === 'Quente'
+            : priority === 'Quente'
               ? 'priorizar abordagem'
               : 'nutrir e monitorar';
       const channel = phoneType === 'celular' ? 'whatsapp' : (email ? 'email' : (phone ? 'telefone' : (lead.link ? linkKind : 'enriquecer')));
@@ -1902,7 +1933,7 @@
         ageBucket: dateBucket(age),
         score,
         quality: score >= 75 ? 'alta' : (score >= 50 ? 'media' : 'baixa'),
-        suggestedPriority,
+        priority,
         completeness: Math.round((filled / 11) * 100),
         filled,
         channel,
@@ -1916,7 +1947,7 @@
       const duplicateCounts = duplicateCountsFor(filteredData);
       const rows = [
         [
-          'ID', 'Nome', 'Empresa', 'Fonte', 'Categoria', 'PrioridadeManual', 'PrioridadeSugerida',
+          'ID', 'Nome', 'Empresa', 'Fonte', 'Categoria', 'Prioridade',
           'Status', 'Data', 'MesAno', 'Ano', 'IdadeDias', 'FaixaIdade', 'Numero',
           'TelefoneLimpo', 'TelefoneE164', 'DDD', 'TipoTelefone', 'PotencialWhatsApp',
           'Email', 'DominioEmail', 'TipoEmail', 'Link', 'TipoLink', 'Site', 'DominioSite',
@@ -1926,8 +1957,8 @@
         ...filteredData.map(lead => {
           const analysis = leadAnalysis(lead, duplicateCounts);
           return [
-            lead.id, lead.nome, lead.empresa, lead.fonte, analysis.category, lead.prioridade,
-            analysis.suggestedPriority, lead.status, formatDateForInput(lead.data), analysis.month,
+            lead.id, lead.nome, lead.empresa, lead.fonte, analysis.category, analysis.priority,
+            lead.status, formatDateForInput(lead.data), analysis.month,
             analysis.year, analysis.age, analysis.ageBucket, lead.numero, analysis.phone,
             analysis.phoneE164, analysis.ddd, analysis.phoneType, analysis.whatsapp, analysis.email,
             analysis.emailDomain, analysis.emailType, lead.link, analysis.linkKind, lead.site,
@@ -1985,6 +2016,9 @@
     });
 
     el('leadsTbody').addEventListener('click', event => {
+      const row = event.target.closest('tr[data-row-id]');
+      if (row) selectLeadRow(row.dataset.rowId);
+
       const button = event.target.closest('button');
       if (!button) return;
 
