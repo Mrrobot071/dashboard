@@ -1034,6 +1034,7 @@
     const SUPABASE_SELECT_COLUMNS = '*';
     const STATUS_ORDER = ['Captado', 'Visualizado', 'Tratado', 'Retorno', 'Fechado-Venda', 'Fechado-Perda'];
     const PRIORITY_ORDER = ['Quente', 'Morno', 'Frio'];
+    const PRIORITY_OVERRIDE_KEY = 'construtec_priority_overrides_v1';
     const TABLE_PAGE_SIZE = 500;
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -1042,6 +1043,7 @@
     let totalLeadsCount = 0;
     let currentPage = 1;
     let selectedLeadId = '';
+    let priorityOverrides = readPriorityOverrides();
     const COLUMN_FILTER_FIELDS = ['id', 'nome', 'fonte', 'status', 'data', 'numero', 'email', 'link'];
 
     const el = id => document.getElementById(id);
@@ -1153,6 +1155,34 @@
       if (n.includes('morn')) return 'Morno';
       if (n.includes('fri')) return 'Frio';
       return 'Frio';
+    }
+
+    function readPriorityOverrides() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(PRIORITY_OVERRIDE_KEY) || '{}');
+        return parsed && typeof parsed === 'object' ? parsed : {};
+      } catch (_err) {
+        return {};
+      }
+    }
+
+    function setPriorityOverride(id, priority) {
+      const key = String(id ?? '');
+      if (!key) return;
+      priorityOverrides[key] = matchPriority(priority);
+      try {
+        localStorage.setItem(PRIORITY_OVERRIDE_KEY, JSON.stringify(priorityOverrides));
+      } catch (_err) {
+        // A prioridade segue funcionando nesta sessão mesmo sem persistência local.
+      }
+    }
+
+    function manualPriorityFor(lead) {
+      const key = String(lead?.id ?? '');
+      const override = key ? priorityOverrides[key] : '';
+      if (PRIORITY_ORDER.includes(override)) return override;
+      const saved = matchPriority(lead?.prioridade);
+      return saved === 'Frio' ? '' : saved;
     }
 
     function normalizeLead(row) {
@@ -1461,7 +1491,11 @@
           <td>#${escapeHTML(lead.id)}</td>
           <td><input class="table-input name-input" data-id="${escapeHTML(lead.id)}" data-field="nome" value="${escapeHTML(lead.nome)}" aria-label="Nome do lead"></td>
           <td><input class="table-input" data-id="${escapeHTML(lead.id)}" data-field="fonte" value="${escapeHTML(lead.fonte)}" aria-label="Fonte"></td>
-          <td><span class="priority-badge priority-${priorityClass}" title="Prioridade calculada pelo score">${escapeHTML(analysis.priority)}</span></td>
+          <td>
+            <select class="table-input pill-select priority-${priorityClass}" data-id="${escapeHTML(lead.id)}" data-field="prioridade" aria-label="Prioridade">
+              ${PRIORITY_ORDER.map(priority => `<option value="${priority}" ${analysis.priority === priority ? 'selected' : ''}>${priority}</option>`).join('')}
+            </select>
+          </td>
           <td>
             <select class="table-input pill-select status-${statusClass}" data-id="${escapeHTML(lead.id)}" data-field="status" aria-label="Status">
               ${STATUS_ORDER.map(status => `<option value="${status}" ${lead.status === status ? 'selected' : ''}>${status}</option>`).join('')}
@@ -1893,7 +1927,8 @@
       score += city || state ? 5 : 0;
       score += lead.data ? 5 : 0;
       score = Math.min(score, 100);
-      const priority = score >= 75 ? 'Quente' : (score >= 50 ? 'Morno' : 'Frio');
+      const scorePriority = score >= 75 ? 'Quente' : (score >= 50 ? 'Morno' : 'Frio');
+      const priority = manualPriorityFor(lead) || scorePriority;
       const filled = [lead.nome, lead.fonte, category, lead.status, lead.data, phone, email, lead.link, lead.site, city, state].filter(Boolean).length;
       const key = analysisKey(lead);
       const duplicate = key && duplicateCounts[key] > 1;
@@ -2012,6 +2047,20 @@
     el('leadsTbody').addEventListener('change', event => {
       if (event.target?.classList?.contains('pill-select')) {
         updatePillSelectStyle(event.target);
+        if (event.target.dataset.field === 'prioridade') {
+          const priority = matchPriority(event.target.value);
+          event.target.value = priority;
+          setPriorityOverride(event.target.dataset.id, priority);
+          const lead = leadsData.find(item => String(item.id) === String(event.target.dataset.id));
+          if (lead) lead.prioridade = priority;
+          if (el('priorityFilter').value) {
+            applyFilters(false);
+          } else {
+            renderKPIs();
+            renderCharts();
+            refreshIcons();
+          }
+        }
       }
     });
 
