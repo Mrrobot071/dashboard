@@ -665,18 +665,6 @@
       font-weight: 850;
     }
 
-    .priority-badge {
-      min-width: 84px;
-      border-radius: 999px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 6px 10px;
-      font-size: .78rem;
-      font-weight: 900;
-      white-space: nowrap;
-    }
-
     .priority-quente,
     .status-fechado-venda {
       color: #166534;
@@ -1005,7 +993,7 @@
               <th><input class="column-filter" data-column-filter="id" placeholder="ID" inputmode="numeric" aria-label="Filtrar por ID"></th>
               <th><input class="column-filter" data-column-filter="nome" placeholder="Nome" aria-label="Filtrar por nome"></th>
               <th><select class="column-filter" data-column-filter="fonte" aria-label="Filtrar por fonte"><option value="">Todas</option></select></th>
-              <th></th>
+              <th><select class="column-filter" data-column-filter="prioridade" aria-label="Filtrar por prioridade"><option value="">Todas</option></select></th>
               <th><select class="column-filter" data-column-filter="status" aria-label="Filtrar por status"><option value="">Todos</option></select></th>
               <th><input class="column-filter" data-column-filter="data" placeholder="Data" aria-label="Filtrar por data"></th>
               <th><input class="column-filter" data-column-filter="numero" placeholder="Numero" inputmode="tel" aria-label="Filtrar por numero"></th>
@@ -1034,7 +1022,6 @@
     const SUPABASE_SELECT_COLUMNS = '*';
     const STATUS_ORDER = ['Captado', 'Visualizado', 'Tratado', 'Retorno', 'Fechado-Venda', 'Fechado-Perda'];
     const PRIORITY_ORDER = ['Quente', 'Morno', 'Frio'];
-    const PRIORITY_OVERRIDE_KEY = 'construtec_priority_overrides_v1';
     const TABLE_PAGE_SIZE = 500;
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -1043,8 +1030,7 @@
     let totalLeadsCount = 0;
     let currentPage = 1;
     let selectedLeadId = '';
-    let priorityOverrides = readPriorityOverrides();
-    const COLUMN_FILTER_FIELDS = ['id', 'nome', 'fonte', 'status', 'data', 'numero', 'email', 'link'];
+    const COLUMN_FILTER_FIELDS = ['id', 'nome', 'fonte', 'prioridade', 'status', 'data', 'numero', 'email', 'link'];
 
     const el = id => document.getElementById(id);
     const setText = (id, value) => {
@@ -1157,30 +1143,7 @@
       return 'Frio';
     }
 
-    function readPriorityOverrides() {
-      try {
-        const parsed = JSON.parse(localStorage.getItem(PRIORITY_OVERRIDE_KEY) || '{}');
-        return parsed && typeof parsed === 'object' ? parsed : {};
-      } catch (_err) {
-        return {};
-      }
-    }
-
-    function setPriorityOverride(id, priority) {
-      const key = String(id ?? '');
-      if (!key) return;
-      priorityOverrides[key] = matchPriority(priority);
-      try {
-        localStorage.setItem(PRIORITY_OVERRIDE_KEY, JSON.stringify(priorityOverrides));
-      } catch (_err) {
-        // A prioridade segue funcionando nesta sessão mesmo sem persistência local.
-      }
-    }
-
     function manualPriorityFor(lead) {
-      const key = String(lead?.id ?? '');
-      const override = key ? priorityOverrides[key] : '';
-      if (PRIORITY_ORDER.includes(override)) return override;
       const saved = matchPriority(lead?.prioridade);
       return saved === 'Frio' ? '' : saved;
     }
@@ -1278,6 +1241,7 @@
       fillSelect('statusFilter', 'Status', STATUS_ORDER.filter(status => leadsData.some(lead => lead.status === status)));
       fillSelect('priorityFilter', 'Prioridade', PRIORITY_ORDER.filter(priority => priorities.includes(priority)));
       fillColumnSelect('fonte', 'Todas', [...new Set(leadsData.map(lead => lead.fonte).filter(Boolean))].sort());
+      fillColumnSelect('prioridade', 'Todas', PRIORITY_ORDER.filter(priority => priorities.includes(priority)));
       fillColumnSelect('status', 'Todos', STATUS_ORDER.filter(status => leadsData.some(lead => lead.status === status)));
     }
 
@@ -1308,6 +1272,7 @@
 
     function leadColumnValue(lead, field) {
       if (field === 'data') return formatDateForInput(lead.data);
+      if (field === 'prioridade') return leadAnalysis(lead, {}).priority;
       return String(lead[field] ?? '');
     }
 
@@ -2047,20 +2012,6 @@
     el('leadsTbody').addEventListener('change', event => {
       if (event.target?.classList?.contains('pill-select')) {
         updatePillSelectStyle(event.target);
-        if (event.target.dataset.field === 'prioridade') {
-          const priority = matchPriority(event.target.value);
-          event.target.value = priority;
-          setPriorityOverride(event.target.dataset.id, priority);
-          const lead = leadsData.find(item => String(item.id) === String(event.target.dataset.id));
-          if (lead) lead.prioridade = priority;
-          if (el('priorityFilter').value) {
-            applyFilters(false);
-          } else {
-            renderKPIs();
-            renderCharts();
-            refreshIcons();
-          }
-        }
       }
     });
 
